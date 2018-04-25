@@ -96,7 +96,6 @@ public class TVProphetRouterV2 extends ActiveRouter {
 			beta = DEFAULT_BETA;
 		}
 
-		System.out.println("TVPROPHETV2");
 		initPreds();
 		initEncTimes();
 		initTava();
@@ -151,6 +150,7 @@ public class TVProphetRouterV2 extends ActiveRouter {
 	
 	public Message getFirstMessageOnBuffer(){
 		List<Tuple<Message, Connection>> buffer = sortByWeight(getMessagesForConnected());
+
 		if (!buffer.isEmpty()){
 			return buffer.get(0).getKey();
 		}
@@ -184,6 +184,7 @@ public class TVProphetRouterV2 extends ActiveRouter {
 	public boolean shouldSendFirst(Connection c){
 		DTNHost other = c.getOtherNode(getHost());
 		Message m1 = getFirstMessageOnBuffer();
+//		System.out.println("OTHERS");
 		Message m2 = ((TVProphetRouterV2) other.getRouter()).getFirstMessageOnBuffer();
 		
 		if (m2==null){ //otherNode has no message to send
@@ -213,25 +214,29 @@ public class TVProphetRouterV2 extends ActiveRouter {
 		}
 		Tuple<Message, Connection> t = null;
 		List<Tuple<Message, Connection>> buffer = sortByWeight(getMessagesForConnected());
+//		System.out.println("buffer messages: " + buffer);
 		if (!buffer.isEmpty()){
 			for (Connection c : connections){
 				if (shouldSendFirst(c)){
+					
 //					System.out.println("SHOULD SEND FIRST "  + getHost());
 					t = tryMessagesForConnected(buffer);
-					System.out.println("SPEED OF THIS TRANFER: " + c.getSpeed() );
+//					System.out.println("SPEED OF THIS TRANFER: " + c.getSpeed() );
 				}
 			}
 		}
+		
 		if (t!=null){
+//			System.out.println(getHost() + " t not null.");
 			return t.getValue();
 		}
 
-		// didn't start transfer to any node -> ask messages from connected
-		for (Connection con : connections) {
-			if (con.getOtherNode(getHost()).requestDeliverableMessages(con)) {
-				return con;
-			}
-		}
+//		// didn't start transfer to any node -> ask messages from connected
+//		for (Connection con : connections) {
+//			if (con.getOtherNode(getHost()).requestDeliverableMessages(con)) {
+//				return con;
+//			}
+//		}
 		return null;
 	}
 	
@@ -269,6 +274,7 @@ public class TVProphetRouterV2 extends ActiveRouter {
 				return (diff < 0 ? -1 : 1);
 			}
 		});
+//		System.out.println("buffer List: " +list);
 		return list;
 	}
 	
@@ -464,8 +470,9 @@ public class TVProphetRouterV2 extends ActiveRouter {
 		RoutingInfo ri = new RoutingInfo(preds.size() +
 				" delivery prediction(s)");
 		RoutingInfo transSize = new RoutingInfo(transmissionPreds.size() + " transmission prediction(s)");
+		RoutingInfo buffer = new RoutingInfo(getMessageCollection().size() + " messages to send.");
 		
-		for (Map.Entry<DTNHost, Double> e : preds.entrySet()) {
+				for (Map.Entry<DTNHost, Double> e : preds.entrySet()) {
 			DTNHost host = e.getKey();
 			Double value = e.getValue();
 
@@ -478,10 +485,15 @@ public class TVProphetRouterV2 extends ActiveRouter {
 
 			transSize.addMoreInfo(new RoutingInfo(String.format("%s : %.6f", host, value)));
 		}
+		
+		for (Message m : getMessageCollection()){
+			buffer.addMoreInfo(new RoutingInfo(String.format("%s : %s", m.getTo(), m)));
+		}
 
 		
 		top.addMoreInfo(ri);
 		top.addMoreInfo(transSize);
+		top.addMoreInfo(buffer);
 		return top;
 	}
 	
