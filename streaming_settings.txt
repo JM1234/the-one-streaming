@@ -11,7 +11,7 @@ streamApp1.streamTime=700
 streamApp1.streamID=9999
 
 streamApp2.type = WatcherAppV3
-streamApp2.destinationRange= 0,3
+streamApp2.destinationRange= 0,11
 streamApp2.streamSize=1.5M
 streamApp2.watcherType=1
 

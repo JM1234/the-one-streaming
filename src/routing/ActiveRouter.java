@@ -239,7 +239,7 @@ public abstract class ActiveRouter extends MessageRouter {
 //		
 		if ( hasMessage(m.getId()) || isDeliveredMessage(m) ||
 				super.isBlacklistedMessage(m.getId())) {
-			System.out.println("DENIED OLD"  + hasMessage(m.getId()) + ":" + isDeliveredMessage(m) +":"+ super.isBlacklistedMessage(m.getId()));
+//			System.out.println("DENIED OLD"  + hasMessage(m.getId()) + ":" + isDeliveredMessage(m) +":"+ super.isBlacklistedMessage(m.getId()));
 			return DENIED_OLD; // already seen this message -> reject it
 		}
 

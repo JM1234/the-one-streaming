@@ -101,12 +101,26 @@ public class BroadcasterAppV3 extends StreamingApplication{
 						Message m = stream.replicate();
 						((TVProphetRouterV2) host.getRouter()).addUrgentMessage(m, false);
 						System.out.println(host + " SENDING BROADCAST to " + m.getTo());
-						sendBuffermap(host, msg.getFrom(), stream.getBuffermap());
-						sentHello.put(msg.getFrom(), stream.getLatestChunk().getChunkID());
+						
+						if (stream.getBuffermap() != null){
+							sendBuffermap(host, msg.getFrom(), stream.getBuffermap());
+						}
+						
+						System.out.println("Stream latest chunk: " + stream.getLatestChunk());
+						if (stream.getLatestChunk()!=null){
+							sentHello.put(msg.getFrom(), stream.getLatestChunk().getChunkID());
+						}
+						else{
+							sentHello.put(msg.getFrom(), (long) -1);
+						}
 					}
 					
 					else if (!sentHello.containsKey(msg.getFrom())) {
-						sendBuffermap(host, msg.getFrom(), stream.getBuffermap());
+						if (stream.getLatestChunk() == null){
+							sendBuffermap(host, msg.getFrom(), stream.getBuffermap());
+						}else{
+//							sendBuffermap(host, msg.getFrom(), new ArrayList<>-1);
+						}
 						sentHello.put(msg.getFrom(), stream.getLatestChunk().getChunkID());
 					}
 //					receivedHello.add(msg.getFrom());
@@ -132,8 +146,6 @@ public class BroadcasterAppV3 extends StreamingApplication{
 					interestedNeighbors.remove(msg.getFrom());
 				}
 			}
-			
-			
 		}catch(NullPointerException e){}
 		return msg;
 	}
@@ -207,7 +219,12 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	
 	public void sendBuffermap(DTNHost host, DTNHost to, Collection<Long> list){
 		String id = APP_TYPE+ ":hello_" + SimClock.getIntTime() +"-" + host.getAddress() +"-" + to;
-	
+		
+		long ack =-1;
+		if(!stream.getBuffermap().isEmpty()){
+			ack = stream.getLatestChunk().getChunkID();
+		}
+		
 		System.out.println(host+ " sending HELLO at time " + SimClock.getIntTime() + " to " + to);
 		
 		Message m = new Message(host, to, id, BUFFERMAP_SIZE); //buffermap size must have basis
@@ -215,7 +232,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		m.addProperty("type", APP_TYPE);
 		m.addProperty("msg_type", HELLO);
 		m.addProperty("status", 2);
-		m.addProperty("ack", stream.getLatestChunk().getChunkID());
+		m.addProperty("ack", ack);
 		m.addProperty("buffermap", list); // this is full buffermap
 		m.addProperty(TVProphetRouterV2.MESSAGE_WEIGHT, 5);
 		host.createNewMessage(m);
@@ -225,12 +242,17 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	}
 	
 	public void updateHello(DTNHost host){
-//		int curTime = SimClock.getIntTime();	
-		long currAck = stream.getLatestChunk().getChunkID();
+//		System.out.println("@ updating hello");
+//		int curTime = SimClock.getIntTime();
+		long currAck=-1;
+		
+		if (stream.getLatestChunk()!=null){
+			currAck = stream.getLatestChunk().getChunkID();
+		}
 		
 		for (DTNHost h : sentHello.keySet()){
 			long lastChunkSent = sentHello.get(h);
-			
+
 			if (lastChunkSent<currAck){
 				int firstIndex = stream.getBuffermap().indexOf(lastChunkSent)+1;
 				int lastIndex = stream.getBuffermap().size();
@@ -240,9 +262,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 //				stream.setLastUpdate(h, stream.getBuffermap().size());
 				System.out.println("Last hello sent: " + stream.getChunk(lastIndex-1).getChunkID());
 			}
-				
-			}
-//		}
+		}
 	}	
 	
 	@Override
@@ -268,19 +288,19 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	 */
 	public void evaluateResponse(DTNHost host, DTNHost to){ //evaluate if we should choke or unchoke this node that sent INTERESTED
 //		System.out.println("@ evaluating response");
-		int ctr=0;
-		while(unchoked.get(ctr)!=null && ctr<3){
-			ctr++;
-		}
-		if (interestedNeighbors.size()<3 && ctr<3 && !unchoked.contains(to)){
+//		int ctr=0;
+//		while(unchoked.get(ctr)!=null && ctr<3){
+//			ctr++;
+//		}
+//		if (interestedNeighbors.size()<3 && ctr<3 && !unchoked.contains(to)){
+//			sendResponse(host, to, true);
+//			unchoked.set(ctr,to);
+//			System.out.println(host +" ADDED TO UNCHOKED: "+ to);
+//			interestedNeighbors.remove(to);
+//		}
+//		else if (unchoked.contains(to)){
 			sendResponse(host, to, true);
-			unchoked.set(ctr,to);
-			System.out.println(host +" ADDED TO UNCHOKED: "+ to);
-			interestedNeighbors.remove(to);
-		}
-		else if (unchoked.contains(to)){
-			sendResponse(host, to, true);
-		}
+//		}
 	}
 	
 	public void sendResponse(DTNHost host, DTNHost to, boolean isOkay){

@@ -5,7 +5,7 @@
 ## Scenario settings
 Scenario.name = DTNStreaming
 Scenario.simulateConnections = true
-Scenario.updateInterval = 1
+Scenario.updateInterval = 0.01
 Scenario.endTime = 1000
 Scenario.nrofHostGroups = 1
 
