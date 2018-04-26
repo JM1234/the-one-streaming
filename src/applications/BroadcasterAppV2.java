@@ -169,7 +169,7 @@ public class BroadcasterAppV2 extends StreamingApplication{
 		if (curTime - sentHello.get(otherHost) >= HELLO_UPDATE){ //if it's time to send an updated HELLO
 			System.out.println(host +" sending an updated hello to "+ otherHost + " @ " + curTime);
 			sendBuffermap(host, otherHost);  
-			sentHello.put(otherHost, SimClock.getIntTime());
+//			sentHello.put(otherHost, SimClock.getIntTime());
 		}
 	}
 	
@@ -188,7 +188,7 @@ public class BroadcasterAppV2 extends StreamingApplication{
 			host.createNewMessage(m);
 			m.setTtl(5);
 			
-			sentHello.put(to, SimClock.getIntTime());
+//			sentHello.put(to, SimClock.getIntTime());
 			return m;
 	}
 	

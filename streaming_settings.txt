@@ -11,14 +11,14 @@ streamApp1.streamTime=700
 streamApp1.streamID=9999
 
 streamApp2.type = WatcherAppV3
-streamApp2.destinationRange= 0,11
+streamApp2.destinationRange= 0,3
 streamApp2.streamSize=1.5M
 streamApp2.watcherType=1
 
-streamApp3.type = WatcherAppV2
-streamApp3.destinationRange = 0,3
-streamApp3.streamSize=1.5M
-streamApp3.watcherType=0
+#streamApp3.type = WatcherAppV2
+#streamApp3.destinationRange = 0,3
+#streamApp3.streamSize=1.5M
+#streamApp3.watcherType=0
 
 Group.nrofApplications = 1
 Group.movementModel = StationaryMovement
@@ -26,9 +26,10 @@ Group.router = TVProphetRouterV2
 TVProphetRouter.secondsInTimeUnit=1
 Group.bufferSize = 5000M
 Group.speed = 0.5, 1.5
-Group.sendQueue =FIFO
+Group.sendQueue = FIFO
 Group.nrofInterfaces = 1
 Group.interface1 = wifiDirectInterface
+#Group.deleteDelivered = true
 
 Group1.groupID=b
 Group1.nrofHosts=1
@@ -36,7 +37,7 @@ Group1.application1 = streamApp1
 Group1.nodeLocation = 100,300
 
 Group2.groupID=w
-Group2.nrofHosts=1
+Group2.nrofHosts=10
 Group2.nodeLocation=130,305
 Group2.application1=streamApp2
 

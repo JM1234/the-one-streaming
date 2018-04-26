@@ -69,7 +69,7 @@ public abstract class StreamingApplication extends Application{
 	
 	private Random	rng;	
 	private TreeMap<Long, Integer> chunkCount;
-	protected HashMap<DTNHost, Integer> sentHello;
+	protected HashMap<DTNHost, Long> sentHello; //store last chunkid sent on HELLO
 	protected HashMap<DTNHost, Integer> interestedNeighbors; //nodes that can request from us
 	protected ArrayList<DTNHost> unchoked;
 	
@@ -89,7 +89,7 @@ public abstract class StreamingApplication extends Application{
 		if(s.contains(STREAM_ID)){
 			this.streamID = s.getSetting(STREAM_ID);			
 		}
-		this.sentHello = new HashMap<DTNHost, Integer>();
+		this.sentHello = new HashMap<DTNHost, Long>();
 		chunkCount = new TreeMap<Long, Integer>();
 		interestedNeighbors = new HashMap<DTNHost, Integer>();
 		unchoked = new ArrayList<DTNHost>(4);
@@ -107,7 +107,7 @@ public abstract class StreamingApplication extends Application{
 //		this.streamSize = a.getStreamSize();
 		this.streamID = a.getStreamID();
 		this.rng = new Random(this.seed);
-		this.sentHello = new HashMap<DTNHost, Integer>();
+		this.sentHello = new HashMap<DTNHost, Long>();
 		interestedNeighbors = new HashMap<DTNHost, Integer>();
 		chunkCount = new TreeMap<Long, Integer>();
 		unchoked = new ArrayList<DTNHost>(4);
@@ -167,7 +167,7 @@ public abstract class StreamingApplication extends Application{
 				return c;
 			}
 		}
-		System.out.println("@ GETCURRCONNECTION");
+//		System.out.println("@ GETCURRCONNECTION");
 		return null;
 	}
 	
@@ -177,31 +177,27 @@ public abstract class StreamingApplication extends Application{
 	 * Automatically removes buffer for disconnected nodes.
 	 */
 	protected void checkHelloedConnection(DTNHost host){
+				
+		ArrayList<DTNHost> currConnected = new ArrayList<DTNHost>();
+		for (Connection c : host.getConnections()){
+			currConnected.add(c.getOtherNode(host));
+		}
+			
+		Iterator<Map.Entry<DTNHost, Long>> iterator = sentHello.entrySet().iterator();
 	
-//		if (host.getConnections().size() != sentHello.size()){
-				
-			ArrayList<DTNHost> currConnected = new ArrayList<DTNHost>();
-			for (Connection c : host.getConnections()){
-				currConnected.add(c.getOtherNode(host));
+	    while (iterator.hasNext()) {
+			Map.Entry<DTNHost, Long> h = iterator.next();
+			
+			if (!currConnected.contains(h.getKey())){
+				DTNHost dtnHost= h.getKey();
+				System.out.println(host + " REMOVED SENT HELLO TO " + h.getKey());
+				removeBufferedMessages(host, dtnHost);
+				interestedNeighbors.remove(dtnHost); //if it sent an interested message, remove it from the list of interested
+				updateUnchoked(unchoked.indexOf(dtnHost), null);
+				iterator.remove(); //removed from sentHello
+	
 			}
-//			System.out.println("Senthello contains: " + sentHello);
-//			System.out.println("Connection contains: "  + currConnected);
-				
-			Iterator<Map.Entry<DTNHost, Integer>> iterator = sentHello.entrySet().iterator();
-		
-		    while (iterator.hasNext()) {
-				Map.Entry<DTNHost, Integer> h = iterator.next();
-				
-				if (!currConnected.contains(h.getKey())){
-					DTNHost dtnHost= h.getKey();
-					removeBufferedMessages(host, dtnHost);
-					interestedNeighbors.remove(dtnHost); //if it sent an interested message, remove it from the list of interested
-					updateUnchoked(unchoked.indexOf(dtnHost), null);
-					iterator.remove(); //removed from sentHello
-					System.out.println(host + " removed sentHello " + h.getKey());
-				}
-			}
-//		}
+		}
 	}
 	
 	/*
@@ -217,8 +213,8 @@ public abstract class StreamingApplication extends Application{
 			if (m.getValue().getOtherNode(host).equals(to)){ //remove the messages in the buffer intended for the 'to' node
 				try{
 					Message stored = m.getKey();
-					System.out.println("StoredMsg: "+stored);
-					host.deleteMessage(stored.getId(), false); 
+//					System.out.println("StoredMsg: "+stored);
+//					host.deleteMessage(stored.getId(), false); 
 					updateUnchoked(unchoked.indexOf(stored.getId()), null);
 					interestedNeighbors.remove(stored.getId());
 					System.out.println(stored + " deleted.");

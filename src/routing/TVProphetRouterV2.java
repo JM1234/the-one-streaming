@@ -190,11 +190,15 @@ public class TVProphetRouterV2 extends ActiveRouter {
 		if (m2==null){ //otherNode has no message to send
 			return true;
 		}
+		if (m1==null){ //we have no message to send (di ko pa gets kayano error kun waray ini)
+			return false;
+		}
+
 //		System.out.println("CHECKING @ shouldsendfirst");
 //		System.out.println("Message of " + getHost() + " : " + m1 + " timecreated: "+m1.getCreationTime());
 //		System.out.println("Message of " + c.getOtherNode(getHost()) + " : " + m2 + " timecreated: "+m2.getCreationTime());
 	
-		
+//		System.out.println("HELOOOOOOOOOOOOOOOO " +m1);
 		int weight1 = (int) m1.getProperty(MESSAGE_WEIGHT);
 		int weight2 = (int) m2.getProperty(MESSAGE_WEIGHT);
 		if (weight1<=weight2){ //evaluate whose message is more urgent (with respect to time) m1.getCreationTime() <= m2.getCreationTime() || 
@@ -231,12 +235,12 @@ public class TVProphetRouterV2 extends ActiveRouter {
 			return t.getValue();
 		}
 
-//		// didn't start transfer to any node -> ask messages from connected
-//		for (Connection con : connections) {
-//			if (con.getOtherNode(getHost()).requestDeliverableMessages(con)) {
-//				return con;
-//			}
-//		}
+//		 didn't start transfer to any node -> ask messages from connected
+		for (Connection con : connections) {
+			if (con.getOtherNode(getHost()).requestDeliverableMessages(con)) {
+				return con;
+			}
+		}
 		return null;
 	}
 	
@@ -512,4 +516,12 @@ public class TVProphetRouterV2 extends ActiveRouter {
 		return recvCheck;
 	}
 
+	@Override	
+	protected void transferDone(Connection con) {
+		/* don't leave a copy for the sender */
+//		if (this.getMessagesForConnected().contains(con.getMessage())){
+		if(getMessage(con.getMessage().getId()) !=null ){
+			this.deleteMessage(con.getMessage().getId(), false);
+		}
+	}
 }

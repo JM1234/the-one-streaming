@@ -60,8 +60,7 @@ public abstract class ActiveRouter extends MessageRouter {
 		super(s);
 
 		this.policy = new MessageTransferAcceptPolicy(s);
-		this.deleteDelivered = s.getBoolean(DELETE_DELIVERED_S, true);
-
+		this.deleteDelivered = s.getBoolean(DELETE_DELIVERED_S, false);
 		
 		if (s.contains(EnergyModel.INIT_ENERGY_S)) {
 			this.energy = new EnergyModel(s);
@@ -180,7 +179,6 @@ public abstract class ActiveRouter extends MessageRouter {
 	protected int startTransfer(Message m, Connection con) {
 		int retVal;
 
-
 		if (!con.isReadyForTransfer()) { 
 			return TRY_LATER_BUSY;
 		}
@@ -195,8 +193,9 @@ public abstract class ActiveRouter extends MessageRouter {
 		if (retVal == RCV_OK) { // started transfer
 			addToSendingConnections(con);
 		}
+		
 		else if (deleteDelivered && retVal == DENIED_OLD &&
-				m.getTo() == con.getOtherNode(this.getHost())) {
+				m.getTo() == con.getOtherNode(this.getHost() )) {
 			/* final recipient has already received the msg -> delete it */
 			this.deleteMessage(m.getId(), false);
 		}
@@ -240,6 +239,7 @@ public abstract class ActiveRouter extends MessageRouter {
 //		
 		if ( hasMessage(m.getId()) || isDeliveredMessage(m) ||
 				super.isBlacklistedMessage(m.getId())) {
+			System.out.println("DENIED OLD"  + hasMessage(m.getId()) + ":" + isDeliveredMessage(m) +":"+ super.isBlacklistedMessage(m.getId()));
 			return DENIED_OLD; // already seen this message -> reject it
 		}
 

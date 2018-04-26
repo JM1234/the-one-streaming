@@ -291,7 +291,7 @@ public class WatcherAppV3 extends StreamingApplication{
 //				System.out.println("+++++++++++++++++++++++++++++++++++++++++++++");
 //			}
 			
-			updateHello(host);
+//			updateHello(host);
 //			checkExpiredRequest(host);
 			
 			//for maintaining -- choking and unchoking
@@ -443,7 +443,7 @@ public class WatcherAppV3 extends StreamingApplication{
 		for (int ctr = 0 ; mostUrgent<=getChunkCount().lastKey() && ctr<MAXIMUM_PENDING_REQUEST && 
 				!neighborsCopy.isEmpty() && chunkRequest.size()<MAXIMUM_PENDING_REQUEST; mostUrgent++){
 	
-			System.out.println("HERE @ evaluating what to send." + mostUrgent);
+//			System.out.println("HERE @ evaluating what to send." + mostUrgent);
 			
 			if (chunkRequest.containsKey(mostUrgent) || props.getChunk(mostUrgent)!=null){
 				continue;
@@ -451,8 +451,8 @@ public class WatcherAppV3 extends StreamingApplication{
 			
 //			System.out.println("Most urgent::: " + mostUrgent);
 			for (DTNHost temp : map.keySet()){
-				System.out.println("Current available @ " + temp );
-				System.out.println(map.get(temp));
+//				System.out.println("Current available @ " + temp );
+//				System.out.println(map.get(temp));
 				
 				if (map.get(temp).contains(mostUrgent)){
 					sendRequest(host, temp, mostUrgent);
@@ -475,7 +475,7 @@ public class WatcherAppV3 extends StreamingApplication{
 	private void sendBuffermap(DTNHost host, DTNHost to){ //, ArrayList<Long> chunks, ArrayList<Fragment> fragments){
 		String id = APP_TYPE+ ":hello_" + SimClock.getIntTime() +"-" +host.getAddress() +"-" + to; // + SimClock.getIntTime();
 		
-		System.out.println(host+ " sending HELLO to " + to);
+		System.out.println(host+ " sending HELLO!!!!!!!!!!!!!!!!!!!!!!!! at time " + SimClock.getIntTime() + " to " + to);
 		Message m = new Message(host, to, id, BUFFERMAP_SIZE); //buffermap size must be defined.
 		m.setAppID(APP_ID);
 		m.addProperty("type", APP_TYPE);
@@ -485,8 +485,8 @@ public class WatcherAppV3 extends StreamingApplication{
 		m.addProperty("ack", props.getAck());
 		m.addProperty(TVProphetRouterV2.MESSAGE_WEIGHT, 5);
 		host.createNewMessage(m);
-		m.setTtl(5);
-		sentHello.put(to, SimClock.getIntTime());
+//		m.setTtl(5);
+		sentHello.put(to, props.getAck());
 	}
 	
 	private void sendInterested(DTNHost host, DTNHost to, boolean isInterested) {
@@ -495,11 +495,11 @@ public class WatcherAppV3 extends StreamingApplication{
 		String id;
 		String msgType;
 		if (isInterested){
-			id = APP_TYPE + ":interested_" +	 SimClock.getIntTime() + "-" +to;
+			id = APP_TYPE + ":interested_" + SimClock.getIntTime() +"-" + host + "-" +to;
 			msgType= INTERESTED;
 		}
 		else{
-			id = APP_TYPE + ":uninterested_" +	 SimClock.getIntTime() + "-" +to;
+			id = APP_TYPE + ":uninterested_" + SimClock.getIntTime() + "-" + host + "-" +to;
 			msgType=UNINTERESTED;
 		}
 		
@@ -528,7 +528,7 @@ public class WatcherAppV3 extends StreamingApplication{
 		chunkRequest.put(chunkNeeded, (double) (SimClock.getIntTime()+WAITING_THRESHOLD)); //add to requested chunks
 		lastChunkRequested = chunkNeeded;
 		lastTimeRequested = SimClock.getTime();
-		System.out.println("Sent request to " + to);
+//		System.out.println("Sent request to " + to);
 		sendEventToListeners(StreamAppReport.SENT_REQUEST, null,host);
 	}
 	
@@ -566,18 +566,18 @@ public class WatcherAppV3 extends StreamingApplication{
 		sendEventToListeners(CHUNK_DELIVERED, chunk, host);
 	}
 
-	public void updateHello(DTNHost host){
-		int curTime = SimClock.getIntTime();
-		
-		for (DTNHost h : sentHello.keySet()){
-			if (curTime - sentHello.get(h) >= HELLO_UPDATE && //if it's time to send an updated HELLO
-					(!getCurrConnection(host, h).isTransferring())){ //or if nothing is happening in the connection (i.e, we are not sending anything)
-				System.out.println(host +" sending an updated hello to "+ h + " @ " + curTime);
-				sendBuffermap(host, h);  
-				sentHello.put(h, SimClock.getIntTime());
-			}
-		}
-	}
+//	public void updateHello(DTNHost host){
+//		int curTime = SimClock.getIntTime();
+//		
+//		for (DTNHost h : sentHello.keySet()){
+//			if (curTime - sentHello.get(h) >= HELLO_UPDATE && //if it's time to send an updated HELLO
+//					(!getCurrConnection(host, h).isTransferring())){ //or if nothing is happening in the connection (i.e, we are not sending anything)
+//				System.out.println(host +" sending an updated hello to "+ h + " @ " + curTime);
+//				sendBuffermap(host, h);  
+//				sentHello.put(h, props.getAck());
+//			}
+//		}
+//	}
 	
 	@SuppressWarnings("unchecked")
 	public void updateChunksAvailable(DTNHost from, ArrayList<Long> newBuffermap){

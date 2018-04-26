@@ -40,11 +40,11 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	private int connectionSize;
 	
 	private DTNHost curHost;
-	private ArrayList<DTNHost> receivedHello;
+//	private ArrayList<DTNHost> receivedHello;
 	private boolean isListener=false;
 	private double lastChokeInterval = 0;
 	
-	private HashMap<DTNHost, Long> latestHello;
+//	private HashMap<DTNHost, Long> latestHello;
 	
 	public BroadcasterAppV3(Settings s) {
 		super(s);
@@ -53,7 +53,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		r=new Random();
 		sTime = 0; //s.getDouble("streamTime") * r.nextDouble(); //time to start broadcasting
 		System.out.println("STIME: "+sTime);
-		receivedHello = new ArrayList<DTNHost>();
+//		receivedHello = new ArrayList<DTNHost>();
 		initUnchoke();
 		
 	}
@@ -66,7 +66,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		
 		fragment = new SADFragmentation();
 		sTime = a.getSTime();
-		receivedHello = new ArrayList<DTNHost>();
+//		receivedHello = new ArrayList<DTNHost>();
 		initUnchoke();
 	}
 
@@ -101,10 +101,15 @@ public class BroadcasterAppV3 extends StreamingApplication{
 						Message m = stream.replicate();
 						((TVProphetRouterV2) host.getRouter()).addUrgentMessage(m, false);
 						System.out.println(host + " SENDING BROADCAST to " + m.getTo());
+						sendBuffermap(host, msg.getFrom(), stream.getBuffermap());
+						sentHello.put(msg.getFrom(), stream.getLatestChunk().getChunkID());
 					}
-					sendBuffermap(host, msg.getFrom(), stream.getBuffermap());
-					stream.setLastUpdate(msg.getFrom(), stream.getBuffermap().size());
-					receivedHello.add(msg.getFrom());
+					
+					else if (!sentHello.containsKey(msg.getFrom())) {
+						sendBuffermap(host, msg.getFrom(), stream.getBuffermap());
+						sentHello.put(msg.getFrom(), stream.getLatestChunk().getChunkID());
+					}
+//					receivedHello.add(msg.getFrom());
 				}
 				
 				else if (msg_type.equalsIgnoreCase(BROADCAST_REQUEST)){
@@ -201,9 +206,9 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	}
 	
 	public void sendBuffermap(DTNHost host, DTNHost to, Collection<Long> list){
-		String id = APP_TYPE+ ":hello_" + SimClock.getIntTime() +"-" +host.getAddress() +"-" + to;
+		String id = APP_TYPE+ ":hello_" + SimClock.getIntTime() +"-" + host.getAddress() +"-" + to;
 	
-		System.out.println(host+ " sending HELLO to " + to);
+		System.out.println(host+ " sending HELLO at time " + SimClock.getIntTime() + " to " + to);
 		
 		Message m = new Message(host, to, id, BUFFERMAP_SIZE); //buffermap size must have basis
 		m.setAppID(APP_ID);
@@ -214,28 +219,30 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		m.addProperty("buffermap", list); // this is full buffermap
 		m.addProperty(TVProphetRouterV2.MESSAGE_WEIGHT, 5);
 		host.createNewMessage(m);
-		m.setTtl(5);
+//		m.setTtl(5);
 	
-		sentHello.put(to, SimClock.getIntTime());
+//		sentHello.put(to, SimClock.getIntTime());
 	}
 	
 	public void updateHello(DTNHost host){
-		int curTime = SimClock.getIntTime();	
-
+//		int curTime = SimClock.getIntTime();	
+		long currAck = stream.getLatestChunk().getChunkID();
+		
 		for (DTNHost h : sentHello.keySet()){
-			if (curTime - sentHello.get(h) >= HELLO_UPDATE) { //&& //if it's time to send an updated HELLO
-//					(getCurrConnection(host, h).isTransferring()!=true)){ //and nothing is happening in the connection (i.e, we are not sending anything)
-				
-//				System.out.println("Last sent update: " + stream.getChunk(stream.getBuffermap().size()-1).getChunkID() + 
-//						"With respect to time: " + stream.getChunk(curTime));
-				
-//				System.out.println("Last UPDATE (index) " + stream.getLastUpdate(h) + " End update now (index): " + stream.getBuffermap().size());
-				ArrayList<Long> latestUpdates = new ArrayList<Long> (stream.getBuffermap().subList(stream.getLastUpdate(h), stream.getBuffermap().size()));
+			long lastChunkSent = sentHello.get(h);
+			
+			if (lastChunkSent<currAck){
+				int firstIndex = stream.getBuffermap().indexOf(lastChunkSent)+1;
+				int lastIndex = stream.getBuffermap().size();
+				ArrayList<Long> latestUpdates = new ArrayList<Long> (stream.getBuffermap().subList(firstIndex, lastIndex));
 				sendBuffermap(host, h, latestUpdates);  
-				sentHello.put(h, curTime);
-				stream.setLastUpdate(h, stream.getBuffermap().size());
+				sentHello.put(h, stream.getChunk(lastIndex-1).getChunkID());
+//				stream.setLastUpdate(h, stream.getBuffermap().size());
+				System.out.println("Last hello sent: " + stream.getChunk(lastIndex-1).getChunkID());
 			}
-		}
+				
+			}
+//		}
 	}	
 	
 	@Override

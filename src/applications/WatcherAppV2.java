@@ -336,7 +336,7 @@ public class WatcherAppV2 extends StreamingApplication {
 		if (curTime - sentHello.get(otherHost) >= HELLO_UPDATE){ //if it's time to send an updated HELLO
 			System.out.println(host +" sending an updated hello to "+ otherHost + " @ " + curTime);
 			sendBuffermap(host, otherHost, props.getBufferMap(), null);
-			sentHello.put(otherHost, SimClock.getIntTime());
+//			sentHello.put(otherHost, SimClock.getIntTime());
 		}
 	}
 	
@@ -366,7 +366,7 @@ public class WatcherAppV2 extends StreamingApplication {
 			m.addProperty(TVProphetRouterV2.MESSAGE_WEIGHT, 1);
 			host.createNewMessage(m);
 			m.setTtl(5);
-			sentHello.put(to, SimClock.getIntTime());
+//			sentHello.put(to, SimClock.getIntTime());
 			return m;
 	}
 	
