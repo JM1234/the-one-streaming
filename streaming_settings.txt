@@ -37,7 +37,7 @@ Group1.application1 = streamApp1
 Group1.nodeLocation = 100,300
 
 Group2.groupID=w
-Group2.nrofHosts=10
+Group2.nrofHosts=1
 Group2.nodeLocation=130,305
 Group2.application1=streamApp2
 

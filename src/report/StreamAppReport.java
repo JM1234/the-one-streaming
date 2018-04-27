@@ -89,7 +89,7 @@ public class StreamAppReport extends Report implements ApplicationListener{
 				 + "time_started_playing: " +  nodeRecord.get(h).getTimeStartedPlaying() + eol
 				 + "time_last_played: " + nodeRecord.get(h).getTimeLastPlayed() + eol
 				 + "number_of_times_interrupted: " + nodeRecord.get(h).getNrofTimesInterrupted() + eol
-				 + "number_of_chunks_received (with duplicates): " + nodeRecord.get(h).getNrofChunksReceived() + eol
+				 + "number_of_chunks_received (total): " + nodeRecord.get(h).getNrofChunksReceived() + eol
 				 + "number_of_duplicate_chunks_received: " + nodeRecord.get(h).getNrofDuplicateChunks() + eol
 				 + "chunks received: " + nodeRecord.get(h).getChunksReceived() +eol
 				 + "time_first_requested: " + nodeRecord.get(h).getTimeFirstRequested() + eol

@@ -144,6 +144,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 				}
 				else if (msg_type.equalsIgnoreCase(UNINTERESTED)){
 					interestedNeighbors.remove(msg.getFrom());
+					unchoked.remove(msg.getFrom());
 				}
 			}
 		}catch(NullPointerException e){}
@@ -166,32 +167,31 @@ public class BroadcasterAppV3 extends StreamingApplication{
 				stream.generateChunks(getStreamID(), fragment.getCurrIndex());
 			}
 			
-//			//for maintaining -- choking and unchoking
-//			if ( ((curTime - lastChokeInterval) % 5) == 0){
-//				
-////				System.out.println("INTERESTED NEIGHBORS: " + interestedNeighbors.keySet());
-//				if (hasNewInterested()){
+			//for maintaining -- choking and unchoking
+			if ( ((curTime - lastChokeInterval) % 5) == 0){
+				
+//				System.out.println("INTERESTED NEIGHBORS: " + interestedNeighbors.keySet());
+				if (hasNewInterested()){
 //					
-//					ArrayList<DTNHost> recognized = getRecognized();
-//					removeUninterested(host, recognized);
+					ArrayList<DTNHost> recognized =  new ArrayList<DTNHost>(interestedNeighbors.keySet());
 //					
-////					System.out.println("RECOGNIZED NODES: " + recognized);
+////				System.out.println("RECOGNIZED NODES: " + recognized);
 //					
 //					if(!recognized.isEmpty()){
-//						if (curTime-lastChokeInterval >= 15){
-//							unchokeTop3(host, recognized);
-//							unchokeRand(host, recognized);
-//							chokeOthers(host, recognized);
-//							lastChokeInterval = curTime;
-//						}
-//						else if (!recognized.isEmpty()){
-//							unchokeRand(host, recognized);
-//						}
+						if (curTime-lastChokeInterval >= 15){ //optimistic interval = every 15 seconds
+							unchokeTop3(host, recognized);
+							unchokeRand(host, recognized);
+							chokeOthers(host, recognized);
+							lastChokeInterval = curTime;
+						}
+						else { //choke interval == 5 seconds for random
+							unchokeRand(host, recognized);
+						}
 //					}
-//				}
-//
-////				System.out.println("UNCHOKED: "+ unchoked);
-//			}
+				}
+
+//				System.out.println("UNCHOKED: "+ unchoked);
+			}
 			
 			checkHelloedConnection(host); //remove data of disconnected nodes
 			updateHello(host);
@@ -213,7 +213,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		host.createNewMessage(stream); //must override, meaning start a broadcast that a stream is initiated from this peer
 		//////set response size
 		
-		lastChokeInterval = SimClock.getTime();
+		lastChokeInterval = SimClock.getIntTime();
 		super.sendEventToListeners(BROADCAST_LIVE, null, host);
 	}
 	
@@ -242,8 +242,6 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	}
 	
 	public void updateHello(DTNHost host){
-//		System.out.println("@ updating hello");
-//		int curTime = SimClock.getIntTime();
 		long currAck=-1;
 		
 		if (stream.getLatestChunk()!=null){
@@ -259,7 +257,6 @@ public class BroadcasterAppV3 extends StreamingApplication{
 				ArrayList<Long> latestUpdates = new ArrayList<Long> (stream.getBuffermap().subList(firstIndex, lastIndex));
 				sendBuffermap(host, h, latestUpdates);  
 				sentHello.put(h, stream.getChunk(lastIndex-1).getChunkID());
-//				stream.setLastUpdate(h, stream.getBuffermap().size());
 				System.out.println("Last hello sent: " + stream.getChunk(lastIndex-1).getChunkID());
 			}
 		}
@@ -287,19 +284,19 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	 * 
 	 */
 	public void evaluateResponse(DTNHost host, DTNHost to){ //evaluate if we should choke or unchoke this node that sent INTERESTED
-//		System.out.println("@ evaluating response");
-//		int ctr=0;
-//		while(unchoked.get(ctr)!=null && ctr<3){
-//			ctr++;
-//		}
-//		if (interestedNeighbors.size()<3 && ctr<3 && !unchoked.contains(to)){
-//			sendResponse(host, to, true);
-//			unchoked.set(ctr,to);
-//			System.out.println(host +" ADDED TO UNCHOKED: "+ to);
-//			interestedNeighbors.remove(to);
-//		}
-//		else if (unchoked.contains(to)){
+		System.out.println("@ evaluating response");
+		int ctr=0;
+		while(unchoked.get(ctr)!=null && ctr<3){
+			ctr++;
+		}
+		if (interestedNeighbors.size()<3 && ctr<3 && !unchoked.contains(to)){
 			sendResponse(host, to, true);
+			unchoked.set(ctr,to);
+			System.out.println(host +" ADDED TO UNCHOKED: "+ to);
+			interestedNeighbors.remove(to);
+		}
+//		else if (unchoked.contains(to)){ ummmm?
+//			sendResponse(host, to, true);
 //		}
 	}
 	
@@ -327,15 +324,18 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		host.createNewMessage(m);
 	}
 
-	private void removeUninterested(DTNHost host, ArrayList<DTNHost> recognized){
-		
-		for (int i=0; i<4; i++){
-			if (recognized.contains(unchoked.get(i)) && unchoked.get(i)!=null){
-				sendResponse(host, unchoked.get(i), false); //send CHOKE to nodes that are uninterested but in our unchoked before
-				unchoked.set(i, null);
-			}
-		}
-	}
+//	private void removeUninterested(DTNHost host){
+//	
+//		unchoked.remove(host);
+//		interestedNeighbors.remove(host);
+//		
+////		for (int i=0; i<4; i++){
+////			if (recognized.contains(unchoked.get(i)) && unchoked.get(i)!=null){
+////				sendResponse(host, unchoked.get(i), false); //send CHOKE to nodes that are uninterested but in our unchoked before
+////				unchoked.set(i, null);
+////			}
+////		}
+//	}
 	
 	private boolean hasNewInterested(){
 		// count if an sulod han interested is same la ha mga unchoked
@@ -349,24 +349,26 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		return false;
 	}
 	
-	private ArrayList<DTNHost> getRecognized(){
-		int curTime = SimClock.getIntTime();
-		ArrayList<DTNHost> recognized = new ArrayList<DTNHost>(); //save here the recent INTERESTED requests
-	
-		//extract recent INTERESTED messages, delete an diri recent
-		Iterator<Map.Entry<DTNHost, Integer>> entryIt = interestedNeighbors.entrySet().iterator();
-		while(entryIt.hasNext()){
-			Entry<DTNHost, Integer> entry = entryIt.next();
-//			if ( (curTime - entry.getValue()) <= 10 ){ //irerecognize ko la an mga nagsend interested for the past 10 seconds
-				recognized.add(entry.getKey());
-//			}
-//			else{
-//				entryIt.remove();
-//			}
-		}
-		sortNeighborsByBandwidth(recognized);
-		return recognized;
-	}
+//	private ArrayList<DTNHost> getRecognized(){
+//		int curTime = SimClock.getIntTime();
+//		ArrayList<DTNHost> recognized = new ArrayList<DTNHost>(); //save here the recent INTERESTED requests
+//	
+//		//extract recent INTERESTED messages, delete an diri recent
+//		Iterator<Map.Entry<DTNHost, Integer>> entryIt = interestedNeighbors.entrySet().iterator();
+//		while(entryIt.hasNext()){
+//			Entry<DTNHost, Integer> entry = entryIt.next();
+//		
+//			//irerecognize ko la an mga nagsend interested for the past 10 seconds
+////			if ( (curTime - entry.getValue()) <= 10 ){ 
+//				recognized.add(entry.getKey());
+////			}
+////			else{
+////				entryIt.remove();
+////			}
+//		}
+//		sortNeighborsByBandwidth(recognized);
+//		return recognized;
+//	}
 	
 	/*
 	 * called every 15 seconds.
