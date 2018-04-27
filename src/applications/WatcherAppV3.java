@@ -149,7 +149,7 @@ public class WatcherAppV3 extends StreamingApplication{
 						((TVProphetRouterV2) host.getRouter()).addUrgentMessage(broadcastMsg.replicate(), false);
 						
 						if (!sentHello.containsKey(msg.getFrom())){
-							sendBuffermap(host, msg.getFrom(), props.getBufferMap()); 
+							sendBuffermap(host, msg.getFrom(), props.getBuffermap()); 
 							sentHello.put(msg.getFrom(), props.getAck());
 						}
 					}
@@ -185,7 +185,7 @@ public class WatcherAppV3 extends StreamingApplication{
 				
 				StreamChunk chunk = (StreamChunk) msg.getProperty("chunk");
 				
-				if (props.getBufferMap().size()==0){
+				if (props.getBuffermap().size()==0){
 //					System.out.println("FIRST CHUNK RECEIVED");
 					sendEventToListeners(StreamAppReport.FIRST_TIME_RECEIVED, SimClock.getTime(), host);
 				}
@@ -220,7 +220,8 @@ public class WatcherAppV3 extends StreamingApplication{
 						props.setAck(chunk.getChunkID());
 					}
 				}
-				System.out.println(host + " updated:  " + props.getBufferMap());
+				updateHello(host);
+				System.out.println(host + " updated:  " + props.getBuffermap());
 				sendEventToListeners(StreamAppReport.RECEIVED_CHUNK, chunk.getChunkID(), host);
 			}
 			
@@ -265,14 +266,14 @@ public class WatcherAppV3 extends StreamingApplication{
 			for (Connection c: host.getConnections()){
 				DTNHost otherNode = c.getOtherNode(host);
 				if (c.isUp() && !hasHelloed(otherNode)){
-					sendBuffermap(host, otherNode, props.getBufferMap()); //say hello to new connections
+					sendBuffermap(host, otherNode, props.getBuffermap()); //say hello to new connections
 				}
 			}
 		}catch(NullPointerException e){}
 		
 		try{
 			if (isWatching && (curTime-this.lastTimePlayed >= Stream.getStreamInterval())){
-				System.out.println("++++++++++++++MUST BE PLAYING +++++++++++++++++");
+//				System.out.println("++++++++++++++MUST BE PLAYING +++++++++++++++++");
 				if(props.isReady(props.getNext())){ // && !stalled){ //if interrupted, wait for 10 seconds before playing again
 					props.playNext();
 					status = PLAYING;
@@ -282,7 +283,7 @@ public class WatcherAppV3 extends StreamingApplication{
 						sendEventToListeners(StreamAppReport.STARTED_PLAYING, lastTimePlayed, host);
 					}
 				}
-				else {
+				else if (status==PLAYING){
 //					if (bufferring==0) sendEventToListeners(StreamAppReporter.INTERRUPTED, null, host);
 //					stalled=true;
 //					bufferring++;
@@ -297,39 +298,39 @@ public class WatcherAppV3 extends StreamingApplication{
 //						bufferring=0;
 //					}
 				}
-				System.out.println("+++++++++++++++++++++++++++++++++++++++++++++");
+//				System.out.println("+++++++++++++++++++++++++++++++++++++++++++++");
 			}
 			
-//			updateHello(host);
-//			checkExpiredRequest(host);
-			
+
 			//for maintaining -- choking and unchoking
 //			if ( ((curTime - lastChokeInterval) % 5) == 0){
-				
-//				System.out.println("INTERESTED NEIGHBORS: " + interestedNeighbors.keySet());
-				
+//				
+////				System.out.println("INTERESTED NEIGHBORS: " + interestedNeighbors.keySet());
 //				if (hasNewInterested()){
-//					
-//					ArrayList<DTNHost> recognized = getRecognized();
-//					removeUninterested(host, recognized);
-//					
-////					System.out.println("RECOGNIZED NODES: " + recognized);
-//					
-//					if(!recognized.isEmpty()){
-//						if (curTime-lastChokeInterval >= 15){
+////					
+//					ArrayList<DTNHost> recognized =  new ArrayList<DTNHost>(interestedNeighbors.keySet());
+////					
+//////				System.out.println("RECOGNIZED NODES: " + recognized);
+////					
+////					if(!recognized.isEmpty()){
+//						if (curTime-lastChokeInterval >= 15){ //optimistic interval = every 15 seconds
 //							unchokeTop3(host, recognized);
 //							unchokeRand(host, recognized);
 //							chokeOthers(host, recognized);
 //							lastChokeInterval = curTime;
 //						}
-//						else if (!recognized.isEmpty()){
+//						else { //choke interval == 5 seconds for random
 //							unchokeRand(host, recognized);
 //						}
-//					}
+////					}
 //				}
-
-//				System.out.println("UNCHOKED: "+ unchoked);
+//
+////				System.out.println("UNCHOKED: "+ unchoked);
 //			}
+			
+			checkHelloedConnection(host); //remove data of disconnected nodes
+//			updateHello(host);
+		
 			
 		}catch(NullPointerException e){
 		}catch(ArrayIndexOutOfBoundsException i){ }
@@ -444,13 +445,15 @@ public class WatcherAppV3 extends StreamingApplication{
 	 */
 	private void requestFromNeighbors(DTNHost host, long urgentChunk, DTNHost otherNode){ 
 		System.out.println("@request from neighbors");
-		long mostUrgent = urgentChunk;
+		long mostUrgent = urgentChunk+1;
 		
 //		HashMap<DTNHost, ArrayList<Long>> neighborsCopy = (HashMap<DTNHost, ArrayList<Long>>) availableNeighbors.clone();
 //		HashMap<DTNHost, Integer> requestCountPerNode = new HashMap<DTNHost, Integer>();
 		this.maximumRequestPerNode = MAXIMUM_PENDING_REQUEST/availableNeighbors.size(); //be sure what really happens with this
 		
 		ArrayList<Long> otherAvailable= availableNeighbors.get(otherNode);
+		
+		System.out.println("REQUEST _  _ " + maximumRequestPerNode+ ":" + mostUrgent+ ":" + getChunkCount().lastKey() +":"+chunkRequest.size() +":"+MAXIMUM_PENDING_REQUEST);
 		
 		for (int ctr=0; ctr<maximumRequestPerNode && mostUrgent<=getChunkCount().lastKey() && chunkRequest.size()<MAXIMUM_PENDING_REQUEST; mostUrgent++){
 			
@@ -592,18 +595,23 @@ public class WatcherAppV3 extends StreamingApplication{
 		sendEventToListeners(CHUNK_DELIVERED, chunk, host);
 	}
 
-//	public void updateHello(DTNHost host){
-//		int curTime = SimClock.getIntTime();
-//		
-//		for (DTNHost h : sentHello.keySet()){
-//			if (curTime - sentHello.get(h) >= HELLO_UPDATE && //if it's time to send an updated HELLO
-//					(!getCurrConnection(host, h).isTransferring())){ //or if nothing is happening in the connection (i.e, we are not sending anything)
-//				System.out.println(host +" sending an updated hello to "+ h + " @ " + curTime);
-//				sendBuffermap(host, h);  
-//				sentHello.put(h, props.getAck());
-//			}
-//		}
-//	}
+	public void updateHello(DTNHost host){
+		long currAck=props.getAck();
+		
+		for (DTNHost h : sentHello.keySet()){
+			long lastChunkSent = sentHello.get(h);
+
+			if (lastChunkSent<currAck && !h.equals(broadcasterAddress)){
+				
+				int firstIndex = props.getBuffermap().indexOf(lastChunkSent)+1;
+				int lastIndex = props.getBuffermap().size();
+				ArrayList<Long> latestUpdates = new ArrayList<Long> (props.getBuffermap().subList(firstIndex, lastIndex));
+				sendBuffermap(host, h, latestUpdates);  
+				sentHello.put(h, props.getChunk(lastIndex-1).getChunkID());
+				System.out.println("Last hello sent: " + props.getChunk(lastIndex-1).getChunkID());
+			}
+		}
+	}	
 	
 	public void updateChunksAvailable(DTNHost from, ArrayList<Long> newBuffermap){
 //		System.out.println("newbuffermap" + newBuffermap);

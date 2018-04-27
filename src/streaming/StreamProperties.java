@@ -64,7 +64,7 @@ public class StreamProperties {
 	}
 	
 	//simply sending all the chunks it already has, whether bundled or not
-	public ArrayList<Long> getBufferMap(){
+	public ArrayList<Long> getBuffermap(){
 		ArrayList<Long> temp = new ArrayList<Long>();
 		
 		for (StreamChunk c: receivedChunks.values()){

@@ -175,7 +175,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 //					
 					ArrayList<DTNHost> recognized =  new ArrayList<DTNHost>(interestedNeighbors.keySet());
 //					
-////				System.out.println("RECOGNIZED NODES: " + recognized);
+				System.out.println("Interested Nodes: " + recognized);
 //					
 //					if(!recognized.isEmpty()){
 						if (curTime-lastChokeInterval >= 15){ //optimistic interval = every 15 seconds

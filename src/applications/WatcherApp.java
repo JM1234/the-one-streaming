@@ -85,7 +85,7 @@ public class WatcherApp extends StreamingApplication{
 					props.setStreamID(streamID);
 					props.setStartTime(m.getCreationTime());
 					
-					sendBuffermap(host,msg.getHops().get(msg.getHopCount()-1), props.getBufferMap(), props.getFragments());
+					sendBuffermap(host,msg.getHops().get(msg.getHopCount()-1), props.getBuffermap(), props.getFragments());
 					System.out.println("Sending buffermap to : "+ msg.getHops().get(msg.getHopCount()-1));
 					helloed=true;
 					
@@ -118,7 +118,7 @@ public class WatcherApp extends StreamingApplication{
 						props.setAck(chunk.getChunkID());
 					}
 
-					System.out.print(host + " updated: " + props.getBufferMap());
+					System.out.print(host + " updated: " + props.getBuffermap());
 //					System.out.println("ChunksReceived: "+props.getReceived().size());
 				}
 				
@@ -138,7 +138,7 @@ public class WatcherApp extends StreamingApplication{
 //				props.sync(f);
 				
 				System.out.print("Updated: ");
-				for(long c : props.getBufferMap()){
+				for(long c : props.getBuffermap()){
 					System.out.print(c + " ,");
 				}
 				System.out.println("");
@@ -175,13 +175,13 @@ public class WatcherApp extends StreamingApplication{
 						broadcastMsg.setTo(msg.getFrom());
 						((TVProphetRouter) host.getRouter()).addUrgentMessage(broadcastMsg.replicate(), false);
 					}
-					else if (otherStatus==WAITING && props.getBufferMap().contains(otherAck+1) && otherAck<=props.getAck()) { //if nahulat first ever chunk || iya ack < mine
+					else if (otherStatus==WAITING && props.getBuffermap().contains(otherAck+1) && otherAck<=props.getAck()) { //if nahulat first ever chunk || iya ack < mine
 						System.out.println("HANDLING NODE! It's an emergency for it and I have what it needs!");
 						handleNode(msg, host, msg.getFrom());
 					}
 					else if (otherStatus!=WAITING || otherAck > props.getAck()){ //mas importante iya ganap, di ko na kailanngan i evaluate
 						System.out.println("Mas importante ak ganap." + host + "to: "+msg.getFrom());
-						sendBuffermap(host, msg.getFrom(), props.getBufferMap(), props.getFragments());
+						sendBuffermap(host, msg.getFrom(), props.getBuffermap(), props.getFragments());
 					}
 					else{
 						System.out.println("Waray ko anything na im kailangan.");
@@ -232,12 +232,12 @@ public class WatcherApp extends StreamingApplication{
 //			System.out.println(host + " is initiator? " + con.isInitiator(host));
 			
 			if((con.isUp() && !helloed && con.isInitiator(host)) || (con.isReadyForTransfer() && !helloed)){ 
-				sendBuffermap(host, con.getOtherNode(host), props.getBufferMap(), props.getFragments());
+				sendBuffermap(host, con.getOtherNode(host), props.getBuffermap(), props.getFragments());
 				helloed=true;
 				System.out.println(host + " : SENT HELLO!!!!!!!!!!!!" );
 			}	
 			if(status == WAITING){
-				sendBuffermap(host, con.getOtherNode(host), props.getBufferMap(), props.getFragments());
+				sendBuffermap(host, con.getOtherNode(host), props.getBuffermap(), props.getFragments());
 			}
 		}catch(IndexOutOfBoundsException e){
 			helloed=false; //still not sure if it works in multilink

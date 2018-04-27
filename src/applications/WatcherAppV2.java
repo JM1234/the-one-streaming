@@ -226,8 +226,8 @@ public class WatcherAppV2 extends StreamingApplication {
 					}
 				}
 				
-				System.out.println(host + " updated:  " + props.getBufferMap());
-				System.out.println("size: " +props.getBufferMap().size());	
+				System.out.println(host + " updated:  " + props.getBuffermap());
+				System.out.println("size: " +props.getBuffermap().size());	
 			}
 			
 			else if (msg_type.equals(BROADCAST_FRAGMENT_SENT)){
@@ -255,7 +255,7 @@ public class WatcherAppV2 extends StreamingApplication {
 				if (c.isUp()){
 					if (!hasHelloed(otherHost)){
 						System.out.println(host + " is sending hello to "+ otherHost);
-						sendBuffermap(host, c.getOtherNode(host), props.getBufferMap(), null);
+						sendBuffermap(host, c.getOtherNode(host), props.getBuffermap(), null);
 						System.out.println(host + " added to hello: "+c.getOtherNode(host));
 					}		
 					else{
@@ -335,7 +335,7 @@ public class WatcherAppV2 extends StreamingApplication {
 		
 		if (curTime - sentHello.get(otherHost) >= HELLO_UPDATE){ //if it's time to send an updated HELLO
 			System.out.println(host +" sending an updated hello to "+ otherHost + " @ " + curTime);
-			sendBuffermap(host, otherHost, props.getBufferMap(), null);
+			sendBuffermap(host, otherHost, props.getBuffermap(), null);
 //			sentHello.put(otherHost, SimClock.getIntTime());
 		}
 	}
