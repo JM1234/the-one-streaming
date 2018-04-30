@@ -221,12 +221,12 @@ public class TVProphetRouterV2 extends ActiveRouter {
 //		System.out.println("buffer messages: " + buffer);
 		if (!buffer.isEmpty()){
 			for (Connection c : connections){
-				if (shouldSendFirst(c)){
+//				if (shouldSendFirst(c)){
 					
 //					System.out.println("SHOULD SEND FIRST "  + getHost());
 					t = tryMessagesForConnected(buffer);
 //					System.out.println("SPEED OF THIS TRANFER: " + c.getSpeed() );
-				}
+//				}
 			}
 		}
 		

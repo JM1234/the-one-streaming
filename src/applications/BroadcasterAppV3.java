@@ -20,6 +20,7 @@ import core.Message;
 import core.Settings;
 import core.SimClock;
 import fragmentation.SADFragmentation;
+import report.StreamAppReport;
 import routing.TVProphetRouterV2;
 import streaming.Stream;
 import streaming.StreamChunk;
@@ -43,6 +44,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 //	private ArrayList<DTNHost> receivedHello;
 	private boolean isListener=false;
 	private double lastChokeInterval = 0;
+	private double lastOptimalInterval =0;
 	
 //	private HashMap<DTNHost, Long> latestHello;
 	
@@ -104,26 +106,14 @@ public class BroadcasterAppV3 extends StreamingApplication{
 						
 						if (stream.getBuffermap() != null){
 							sendBuffermap(host, msg.getFrom(), stream.getBuffermap());
-						}
-						
-						System.out.println("Stream latest chunk: " + stream.getLatestChunk());
-						if (stream.getLatestChunk()!=null){
-							sentHello.put(msg.getFrom(), stream.getLatestChunk().getChunkID());
-						}
-						else{
-							sentHello.put(msg.getFrom(), (long) -1);
+							sentHello.add(msg.getFrom());
 						}
 					}
 					
-					else if (!sentHello.containsKey(msg.getFrom())) {
-						if (stream.getLatestChunk() == null){
-							sendBuffermap(host, msg.getFrom(), stream.getBuffermap());
-						}else{
-//							sendBuffermap(host, msg.getFrom(), new ArrayList<>-1);
-						}
-						sentHello.put(msg.getFrom(), stream.getLatestChunk().getChunkID());
+					else if (!hasHelloed(msg.getFrom())) {
+						sendBuffermap(host, msg.getFrom(), stream.getBuffermap());
+						sentHello.add(msg.getFrom());
 					}
-//					receivedHello.add(msg.getFrom());
 				}
 				
 				else if (msg_type.equalsIgnoreCase(BROADCAST_REQUEST)){
@@ -132,19 +122,24 @@ public class BroadcasterAppV3 extends StreamingApplication{
 					System.out.println("ReceivedRequest from "+msg.getFrom() + " requesting from: " +  chunkNeeded);
 					//evaluate if fragment or chunk it isesend
 					if (stream.getChunk(chunkNeeded)!=null){
-						sendChunk(stream.getChunk(chunkNeeded), host, msg.getFrom()); //simply sending. no buffer limit yet
+						sendChunk(stream.getChunk(chunkNeeded), host, msg.getFrom()); //simply sending. no buffer limit [yet?]
 					}
 				}
 				else if (msg_type.equals(INTERESTED)){
 					System.out.println(host + " received INTERESTED from " + msg.getFrom());
 					//evaluate response if choke or unchoke
-					
 					interestedNeighbors.put(msg.getFrom(), (int) msg.getCreationTime());
-					evaluateResponse(host, msg.getFrom());				
+					System.out.println("Interested: " + interestedNeighbors);
+					evaluateResponse(host, msg.getFrom());	
+				
 				}
 				else if (msg_type.equalsIgnoreCase(UNINTERESTED)){
-					interestedNeighbors.remove(msg.getFrom());
-					unchoked.remove(msg.getFrom());
+//					if (interestedNeighbors.containsKey(msg.getFrom())){
+						interestedNeighbors.remove(msg.getFrom());
+//					}
+					if (unchoked.contains(msg.getFrom())){
+						updateUnchoked(unchoked.indexOf(msg.getFrom()), null);
+					}
 				}
 			}
 		}catch(NullPointerException e){}
@@ -153,6 +148,9 @@ public class BroadcasterAppV3 extends StreamingApplication{
 
 	@Override
 	public void update(DTNHost host) {
+		if (host ==null){
+			host = host;
+		}
 		double curTime = SimClock.getTime();
 		
 		//startBroadcast here, once
@@ -160,41 +158,73 @@ public class BroadcasterAppV3 extends StreamingApplication{
 			startBroadcast(host);
 			broadcasted =  true;
 		}
+		checkHelloedConnection(host); //remove data of disconnected nodes
 		
 		if (broadcasted){
 			//generate chunks here
 			if (curTime - stream.getTimeLastStream() >= Stream.getStreamInterval()){ //for every interval
 				stream.generateChunks(getStreamID(), fragment.getCurrIndex());
+				sendEventToListeners(StreamAppReport.CHUNK_CREATED, null, host);
+				updateHello(host);
 			}
 			
-			//for maintaining -- choking and unchoking
-			if ( ((curTime - lastChokeInterval) % 5) == 0){
+		}
+		
+		//for maintaining -- choking and unchoking
+		if (curTime-lastChokeInterval >=5){
+			System.out.println("CHOKE INTERVALTRIGGERED!" + curTime);
+			ArrayList<DTNHost> recognized =  new ArrayList<DTNHost>(interestedNeighbors.keySet());
+			
+			if (hasNewInterested()){
 				
-//				System.out.println("INTERESTED NEIGHBORS: " + interestedNeighbors.keySet());
-				if (hasNewInterested()){
-//					
-					ArrayList<DTNHost> recognized =  new ArrayList<DTNHost>(interestedNeighbors.keySet());
-//					
-				System.out.println("Interested Nodes: " + recognized);
-//					
-//					if(!recognized.isEmpty()){
-						if (curTime-lastChokeInterval >= 15){ //optimistic interval = every 15 seconds
-							unchokeTop3(host, recognized);
-							unchokeRand(host, recognized);
-							chokeOthers(host, recognized);
-							lastChokeInterval = curTime;
+				System.out.println("Interested Nodes: " + recognized + " Unchoked: " + unchoked);
+				ArrayList<DTNHost> prevUnchokedList = (ArrayList<DTNHost>) unchoked.clone();
+				
+				if (curTime-lastOptimalInterval >= 15){ //optimistic interval = every 15 seconds
+					recognized.removeAll(unchoked); //remove first an nagrequest bisan unchoked na kanina [pa]. to avoid duplicates
+					recognized.addAll(unchoked); 
+					
+					for (Iterator r = recognized.iterator(); r.hasNext(); ){
+						if(r.next() == null){
+							r.remove();
 						}
-						else { //choke interval == 5 seconds for random
-							unchokeRand(host, recognized);
-						}
-//					}
+					}
+					
+					recognized = sortNeighborsByBandwidth(recognized);
+					for(DTNHost h : recognized){
+						int speed = h.getInterface(1).getTransmitSpeed(h.getInterface(1));
+						System.out.println(h + " : " + speed);
+					}
+							
+					unchokeTop3(host, recognized);
+					prevUnchokedList.removeAll(unchoked.subList(0, 3)); //remove an api na yana ha unchoke la gihap
+//			 		recognized.addAll(prevUnchokedList); //iapi an dati na nakaunchoke na diri na api ha top3 ha pag randomize
+					
+			 		/*
+			 		 * api ha pag random yana an naapi ha unchoke kanina tapos diri na api yana ha newly unchoked
+			 		 */
+					unchokeRand(host, recognized, prevUnchokedList);
+					prevUnchokedList.removeAll(unchoked); //remove utro an tanan na previous na api na ha newly unchoked
+					
+					/*
+					 * nahibilin ha recognized an mga waray ka unchoke. 
+					 * send CHOKE to mga api ha previous unchoked kanina na diri na api yana
+					 */
+					chokeOthers(host, prevUnchokedList); //-- don't  choke if it's not on curr unchokedList
+					lastOptimalInterval = curTime;
 				}
-
-//				System.out.println("UNCHOKED: "+ unchoked);
+				
+				//choke interval == 5 seconds for random
+				else{
+					recognized.add(unchoked.get(3));
+					unchokeRand(host, recognized, prevUnchokedList); //an mga bag-o an pilii random
+				}
 			}
 			
-			checkHelloedConnection(host); //remove data of disconnected nodes
-			updateHello(host);
+			lastChokeInterval = curTime;
+			sendEventToListeners(StreamAppReport.UNCHOKED, unchoked.clone(), host);
+			sendEventToListeners(StreamAppReport.INTERESTED, recognized.clone(), host);
+//			System.out.println("Interested Nodes Now: " + recognized + " Unchoked Now: " + unchoked);
 		}
 	}
 	
@@ -213,7 +243,8 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		host.createNewMessage(stream); //must override, meaning start a broadcast that a stream is initiated from this peer
 		//////set response size
 		
-		lastChokeInterval = SimClock.getIntTime();
+		lastChokeInterval = SimClock.getTime();
+		lastOptimalInterval = SimClock.getTime();
 		super.sendEventToListeners(BROADCAST_LIVE, null, host);
 	}
 	
@@ -248,23 +279,24 @@ public class BroadcasterAppV3 extends StreamingApplication{
 			currAck = stream.getLatestChunk().getChunkID();
 		}
 		
-		for (DTNHost h : sentHello.keySet()){
-			long lastChunkSent = sentHello.get(h);
-
-			if (lastChunkSent<currAck){
-				int firstIndex = stream.getBuffermap().indexOf(lastChunkSent)+1;
-				int lastIndex = stream.getBuffermap().size();
-				ArrayList<Long> latestUpdates = new ArrayList<Long> (stream.getBuffermap().subList(firstIndex, lastIndex));
-				sendBuffermap(host, h, latestUpdates);  
-				sentHello.put(h, stream.getChunk(lastIndex-1).getChunkID());
-				System.out.println("Last hello sent: " + stream.getChunk(lastIndex-1).getChunkID());
-			}
+		for (DTNHost h : sentHello){
+//			long lastChunkSent = sentHello.get(h);
+//			if (lastChunkSent<currAck){
+//				int firstIndex = stream.getBuffermap().indexOf(lastChunkSent)+1;
+//				int lastIndex = stream.getBuffermap().size();
+//				ArrayList<Long> latestUpdates = new ArrayList<Long> (stream.getBuffermap().subList(firstIndex, lastIndex));
+				ArrayList<Long> latest = new ArrayList<Long>();
+				latest.add(currAck);
+				sendBuffermap(host, h, latest);
+//				sentHello.put(h, stream.getChunk(lastIndex-1).getChunkID());
+//				System.out.println("Last hello sent: " + stream.getChunk(lastIndex-1).getChunkID());
+//			}
 		}
 	}	
 	
 	@Override
 	protected void sendChunk(StreamChunk chunk, DTNHost host, DTNHost to) {
-		String id = APP_TYPE + ":chunk_" + chunk.getChunkID()+  " " + chunk.getCreationTime() +"-" +to;
+		String id = APP_TYPE + ":chunk_" + chunk.getChunkID() +  " " + chunk.getCreationTime() +"-" +to + "-" + host.getAddress();
 		
 		System.out.println("Chunk to send." +chunk.getChunkID());
 		Message m = new Message(host, to, id, (int) chunk.getSize());		
@@ -283,17 +315,21 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	 * CHOKE/UNCHOKE STARTS HERE ---------------------->
 	 * 
 	 */
-	public void evaluateResponse(DTNHost host, DTNHost to){ //evaluate if we should choke or unchoke this node that sent INTERESTED
+	public void evaluateResponse(DTNHost host, DTNHost to){ //evaluate if we should choke or unchoke this node that sent INTERESTED at time before chokeInterval
 		System.out.println("@ evaluating response");
 		int ctr=0;
-		while(unchoked.get(ctr)!=null && ctr<3){
-			ctr++;
-		}
-		if (interestedNeighbors.size()<3 && ctr<3 && !unchoked.contains(to)){
+		try{
+			while(unchoked.get(ctr)!=null && ctr<4){
+				ctr++;
+			}
+		}catch(IndexOutOfBoundsException e){}
+		
+		if (ctr<4 && !unchoked.contains(to)){
 			sendResponse(host, to, true);
 			unchoked.set(ctr,to);
+			sendEventToListeners(StreamAppReport.UNCHOKED, unchoked, host);
 			System.out.println(host +" ADDED TO UNCHOKED: "+ to);
-			interestedNeighbors.remove(to);
+			interestedNeighbors.remove(to); //remove from interestedNeighbors since granted
 		}
 //		else if (unchoked.contains(to)){ ummmm?
 //			sendResponse(host, to, true);
@@ -306,12 +342,12 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		String msgType; 
 
 		if (isOkay){
-			id = APP_TYPE + ":UNCHOKE_" + to;
+			id = APP_TYPE + ":UNCHOKE_" +  SimClock.getIntTime() + "-" + host.getAddress()  +"-" + to;
 			msgType = UNCHOKE;
 			System.out.println(host + " sending unchoke to " + to);
 		}
 		else{
-			id = APP_TYPE + ":CHOKE_" + to;
+			id = APP_TYPE + ":CHOKE_" + SimClock.getIntTime()+ "-" + host.getAddress()  + "-" + to;
 			msgType = CHOKE;
 			System.out.println(host + " sending choke to " + to);
 		}
@@ -372,20 +408,27 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	
 	/*
 	 * called every 15 seconds.
+	 * after this method, unchoked list is updated. recognized includes those na diri na api ha top3
 	 */
 	private void unchokeTop3(DTNHost host, ArrayList<DTNHost> recognized){
+		System.out.println("@top3---->");
+		System.out.println("INITIAL    Recognized: " + recognized + " Unchoked: " + unchoked);
 		if (recognized.isEmpty()) return;
 
 		Iterator<DTNHost> i = recognized.iterator();
-		for (int ctr=0; ctr<3; ctr++){ //send UNCHOKE to top 3
+		
+		
+ 		for (int ctr=0; ctr<3; ctr++){ //send UNCHOKE to top 3
 			DTNHost other=null;
 			try{
 				other = i.next();	
-				sendResponse(host, other, true); //send UNCHOKE
-				i.remove(); //notification granted, remove
+				if (!unchoked.contains(other)){ //if diri hya api ha kanina na group of unchoked
+					sendResponse(host, other, true); //send UNCHOKE
+					interestedNeighbors.remove(other); //for those new interested
+				}
+				i.remove(); //notification granted, remove (for those at interested
 			}catch(NoSuchElementException e){}
-//			System.out.println("ctr: "+ctr);
-			unchoked.set(ctr, other);	
+			updateUnchoked(ctr, other);
 		}
 	}	
 	
@@ -394,26 +437,32 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	 * @param recognized interestedNeighbors that are not included in the top 3
 	 * 
 	 */
-	private void unchokeRand(DTNHost host, ArrayList<DTNHost> recognized){ 	//every 5 seconds. i-sure na diri same han last //tas diri dapat api ha top3
+	private void unchokeRand(DTNHost host, ArrayList<DTNHost> recognized, ArrayList<DTNHost> prevUnchoked){ 	//every 5 seconds. i-sure na diri same han last //tas diri dapat api ha top3
+		System.out.println("@rand---->");
+		System.out.println("INITIAL    Recognized: " + recognized + " Unchoked: " + unchoked);
 		if (recognized.isEmpty()) return;
 
 		Random r = new Random();
+		DTNHost prevRand;
+		recognized.removeAll(unchoked.subList(0, 3)); //remove pagpili random an ada na ha unchoked list
+		prevRand = unchoked.get(3);
+		System.out.println("Recognized now without all those at unchoked:" + recognized);
+		
 		int index = r.nextInt(recognized.size()); //possible ini maging same han last random
 		DTNHost randNode = recognized.get(index);
-		DTNHost prevRand;
-		
-		try{
-			recognized.removeAll(unchoked.subList(0, 3)); //remove pagpili random an ada na ha unchoked list
-			prevRand = unchoked.get(3);
-			
-			if (prevRand!=randNode){
-				sendResponse(host, prevRand, false); //send CHOKE to this random node if it is not the same with new node
-			}
-		}catch(IndexOutOfBoundsException i){}
+		System.out.println("index chosen: " + index);
 
+		if (prevRand!=randNode){
+			sendResponse(host, prevRand, false); //send CHOKE to this random node if it is not the same with new node
+			recognized.remove(prevRand);
+			if (!prevUnchoked.contains(randNode)){
+				sendResponse(host, randNode, true); //sendUnchoke to this random node
+			}
+		}
 		updateUnchoked(3, randNode);
-		sendResponse(host, randNode, true); //sendUnchoke to this random node
-		interestedNeighbors.remove(randNode);  //notification granted. remove
+		System.out.println("UNCHOOOOOKKKKEEED=== " + unchoked + " @ time: " + SimClock.getIntTime());
+		interestedNeighbors.remove(randNode);  //notification granted. remove on original interested list
+		recognized.remove(randNode); //notification granted. remove on recognized list
 	}
 	
 	private void chokeOthers(DTNHost host, ArrayList<DTNHost> recognized){

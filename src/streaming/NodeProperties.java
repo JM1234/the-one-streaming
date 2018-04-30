@@ -1,6 +1,12 @@
 package streaming;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Set;
+import java.util.Map.Entry;
+
+import core.DTNHost;
 
 public class NodeProperties {
 
@@ -14,6 +20,9 @@ public class NodeProperties {
 	private int nrofDuplicateRequest=0;
 	private int nrofTimesRequested=0;
 	private ArrayList<Long> chunksReceived= new ArrayList<Long>();;
+	private LinkedHashMap<Double, ArrayList<DTNHost>> unchoked = new LinkedHashMap<Double, ArrayList<DTNHost>>();
+	private LinkedHashMap<Double, ArrayList<DTNHost>> interested = new LinkedHashMap<Double, ArrayList<DTNHost>>();
+	private LinkedHashMap<Double,ArrayList<DTNHost>> availableH = new LinkedHashMap<Double,ArrayList<DTNHost>>();
 	
 	public void addChunk(long chunk){
 		chunksReceived.add(chunk);
@@ -98,4 +107,30 @@ public class NodeProperties {
 	public int getNrofChunksReceived(){
 		return chunksReceived.size();
 	}
+	
+	public void updateUnchoke(double curTime, ArrayList<DTNHost> hosts){
+		unchoked.put(curTime, hosts);
+	}
+	
+	public void updateInterested(double curTime, ArrayList<DTNHost> hosts){
+		interested.put(curTime, hosts);
+	}
+	
+	public void updateAvailable(double curTime, ArrayList<DTNHost> hosts){
+		availableH.put(curTime, hosts);
+	}
+	
+	public HashMap<Double, ArrayList<DTNHost>> getUnchokeList(){
+		return unchoked;
+	}
+
+	public HashMap<Double, ArrayList<DTNHost>> getInterestedList(){
+		return interested;
+	}
+	
+	public HashMap<Double, ArrayList<DTNHost>> getAvailableList(){
+		return availableH;
+	}
+
+
 }

@@ -66,10 +66,11 @@ public abstract class StreamingApplication extends Application{
 	private int		destMin=0;
 	private int	    destMax=1;
 	private String	streamID = "9999";
+	protected static DTNHost host;
 	
 	private Random	rng;	
 	private TreeMap<Long, Integer> chunkCount;
-	protected HashMap<DTNHost, Long> sentHello; //store last chunkid sent on HELLO
+	protected ArrayList<DTNHost> sentHello; //store all chunkids sent on this node
 	protected HashMap<DTNHost, Integer> interestedNeighbors; //nodes that can request from us
 	protected ArrayList<DTNHost> unchoked;
 	
@@ -89,7 +90,7 @@ public abstract class StreamingApplication extends Application{
 		if(s.contains(STREAM_ID)){
 			this.streamID = s.getSetting(STREAM_ID);			
 		}
-		this.sentHello = new HashMap<DTNHost, Long>();
+		this.sentHello = new ArrayList<DTNHost>();
 		chunkCount = new TreeMap<Long, Integer>();
 		interestedNeighbors = new HashMap<DTNHost, Integer>();
 		unchoked = new ArrayList<DTNHost>(4);
@@ -107,7 +108,7 @@ public abstract class StreamingApplication extends Application{
 //		this.streamSize = a.getStreamSize();
 		this.streamID = a.getStreamID();
 		this.rng = new Random(this.seed);
-		this.sentHello = new HashMap<DTNHost, Long>();
+		this.sentHello = new ArrayList<DTNHost>();
 		interestedNeighbors = new HashMap<DTNHost, Integer>();
 		chunkCount = new TreeMap<Long, Integer>();
 		unchoked = new ArrayList<DTNHost>(4);
@@ -177,25 +178,21 @@ public abstract class StreamingApplication extends Application{
 	 * Automatically removes buffer for disconnected nodes.
 	 */
 	protected void checkHelloedConnection(DTNHost host){
-				
 		ArrayList<DTNHost> currConnected = new ArrayList<DTNHost>();
 		for (Connection c : host.getConnections()){
 			currConnected.add(c.getOtherNode(host));
 		}
 			
-		Iterator<Map.Entry<DTNHost, Long>> iterator = sentHello.entrySet().iterator();
-	
+		Iterator<DTNHost> iterator = sentHello.iterator();
 	    while (iterator.hasNext()) {
-			Map.Entry<DTNHost, Long> h = iterator.next();
+			DTNHost dtnHost = iterator.next();
 			
-			if (!currConnected.contains(h.getKey())){
-				DTNHost dtnHost= h.getKey();
-				System.out.println(host + " REMOVED SENT HELLO TO " + h.getKey());
+			if (!currConnected.contains(dtnHost)){
+				System.out.println(host + " REMOVED SENT HELLO TO " + dtnHost);
 				removeBufferedMessages(host, dtnHost);
 				interestedNeighbors.remove(dtnHost); //if it sent an interested message, remove it from the list of interested
-				updateUnchoked(unchoked.indexOf(dtnHost), null);
+				updateUnchoked(unchoked.indexOf(dtnHost), null); //if it is included among the current list of unchoked
 				iterator.remove(); //removed from sentHello
-	
 			}
 		}
 	}
@@ -226,7 +223,7 @@ public abstract class StreamingApplication extends Application{
 	}
 	
 	public boolean hasHelloed(DTNHost host){
-		return sentHello.keySet().contains(host);
+		return sentHello.contains(host);
 	}
 
 	protected void updateChunkCount(ArrayList<Long> buffermap){
@@ -258,30 +255,27 @@ public abstract class StreamingApplication extends Application{
 	
 	public ArrayList<DTNHost> sortNeighborsByBandwidth(Set<DTNHost> hosts){
 		ArrayList<DTNHost> h = new ArrayList<>(hosts);
-		Collections.sort(h, StreamingApplication.BandwidthComparator);
+		Collections.sort(h, Collections.reverseOrder(StreamingApplication.BandwidthComparator));
 		return h;
 	}
 	
 	public ArrayList<DTNHost> sortNeighborsByBandwidth(ArrayList<DTNHost> hosts){
 		ArrayList<DTNHost> h = new ArrayList<>(hosts);
-		Collections.sort(h, StreamingApplication.BandwidthComparator);
+		Collections.sort(h, Collections.reverseOrder(StreamingApplication.BandwidthComparator));
 		return h;
 	}
 
     public static Comparator<DTNHost> BandwidthComparator = new Comparator<DTNHost>() {
-
-    public int compare(DTNHost h1, DTNHost h2) {
-    	
-    	int speed1 = h1.getInterface(1).getTransmitSpeed(h1.getInterface(1));
-    	int speed2 = h2.getInterface(1).getTransmitSpeed(h2.getInterface(1));
-    	
-	   //ascending order
-	   return speed1-speed2;
-	   
-	   //descending order
-	   //return StudentName2.compareTo(StudentName1);
-    }};
-
+    	public int compare(DTNHost h1, DTNHost h2) {
+    		
+//	    	System.out.println("INTERFACE: " + h2);// + " 1: " + h1.getInterface(1));
+    		int speed1 = h1.getInterface(1).getTransmitSpeed(host.getInterface(1));
+    		int speed2 = h2.getInterface(1).getTransmitSpeed(host.getInterface(1));
+	    	
+//    		ascending order
+    		return speed1-speed2;
+    	}
+	};
 
     private static int getHostSpeed(DTNHost host){
     	return host.getInterface(0).getTransmitSpeed(host.getInterface(0));
@@ -295,10 +289,9 @@ public abstract class StreamingApplication extends Application{
     public void updateUnchoked(int index, DTNHost value){
     	try{
     		unchoked.set(index, value); // if in unchoked, remove from list of unchoked
-    	}catch(ArrayIndexOutOfBoundsException e){}
-      
+    	}catch(ArrayIndexOutOfBoundsException e){} 
     }
-    
+
 }
 
 

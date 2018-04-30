@@ -131,7 +131,7 @@ public class BroadcasterAppV2 extends StreamingApplication{
 						DTNHost otherHost = c.getOtherNode(host);
 
 						if (c.isUp() && hasHelloed(c.getOtherNode(host))) {
-							updateHello(host, otherHost);
+//							updateHello(host, otherHost);
 						}
 					}
 				}catch(IndexOutOfBoundsException e){
@@ -163,15 +163,15 @@ public class BroadcasterAppV2 extends StreamingApplication{
 
 	}
 	
-	public void updateHello(DTNHost host, DTNHost otherHost){
-		int curTime = SimClock.getIntTime();
-		
-		if (curTime - sentHello.get(otherHost) >= HELLO_UPDATE){ //if it's time to send an updated HELLO
-			System.out.println(host +" sending an updated hello to "+ otherHost + " @ " + curTime);
-			sendBuffermap(host, otherHost);  
-//			sentHello.put(otherHost, SimClock.getIntTime());
-		}
-	}
+//	public void updateHello(DTNHost host, DTNHost otherHost){
+//		int curTime = SimClock.getIntTime();
+//		
+//		if (curTime - sentHello.get(otherHost) >= HELLO_UPDATE){ //if it's time to send an updated HELLO
+//			System.out.println(host +" sending an updated hello to "+ otherHost + " @ " + curTime);
+//			sendBuffermap(host, otherHost);  
+////			sentHello.put(otherHost, SimClock.getIntTime());
+//		}
+//	}
 	
 	private Message sendBuffermap(DTNHost host, DTNHost to){
 		String id = APP_TYPE+ ":hello" + + SimClock.getIntTime() +"-" +host.getAddress(); //+ SimClock.getIntTime()

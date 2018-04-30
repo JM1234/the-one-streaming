@@ -259,7 +259,7 @@ public class WatcherAppV2 extends StreamingApplication {
 						System.out.println(host + " added to hello: "+c.getOtherNode(host));
 					}		
 					else{
-						updateHello(host, otherHost);
+//						updateHello(host, otherHost);
 					}
 				}
 			}
@@ -330,15 +330,15 @@ public class WatcherAppV2 extends StreamingApplication {
 		}	
 	}
 	
-	public void updateHello(DTNHost host, DTNHost otherHost){
-		int curTime = SimClock.getIntTime();
-		
-		if (curTime - sentHello.get(otherHost) >= HELLO_UPDATE){ //if it's time to send an updated HELLO
-			System.out.println(host +" sending an updated hello to "+ otherHost + " @ " + curTime);
-			sendBuffermap(host, otherHost, props.getBuffermap(), null);
-//			sentHello.put(otherHost, SimClock.getIntTime());
-		}
-	}
+//	public void updateHello(DTNHost host, DTNHost otherHost){
+//		int curTime = SimClock.getIntTime();
+//		
+//		if (curTime - sentHello.get(otherHost) >= HELLO_UPDATE){ //if it's time to send an updated HELLO
+//			System.out.println(host +" sending an updated hello to "+ otherHost + " @ " + curTime);
+//			sendBuffermap(host, otherHost, props.getBuffermap(), null);
+////			sentHello.put(otherHost, SimClock.getIntTime());
+//		}
+//	}
 	
 	private void decodeFragment(Fragment f, int fLevel){
 		if (fLevel==1) props.addFragment(f);

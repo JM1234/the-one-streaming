@@ -2,7 +2,11 @@ package report;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import applications.StreamingApplication;
 import core.Application;
@@ -24,8 +28,13 @@ public class StreamAppReport extends Report implements ApplicationListener{
 	public static final String BROADCAST_RECEIVED = "broadcastReceived";
 	public static final String RESENT_REQUEST = "resentRequest";
 	public static final String SENT_REQUEST = "sentRequest";
+	public static final String UNCHOKED = "unchoked";
+	public static final String INTERESTED = "INTERESTED";
+	public static final String CHUNK_CREATED = "chunkCreated";
+	public static final String UPDATE_AVAILABLE_NEIGHBORS = "updateAvailableNeighbor";
 	
 	private HashMap<DTNHost, NodeProperties> nodeRecord = new HashMap<DTNHost, NodeProperties>();
+	private int createdChunks=0;
 	
 	public void gotEvent(String event, Object params, Application app, DTNHost host) {
 		
@@ -40,6 +49,9 @@ public class StreamAppReport extends Report implements ApplicationListener{
 		if (event.equalsIgnoreCase(BROADCAST_RECEIVED)){
 			double time=(double) params;
 			nodeProps.setTimeBroadcastReceived(time);
+		}
+		else if (event.equalsIgnoreCase(CHUNK_CREATED)){
+			createdChunks++;
 		}
 		else if (event.equalsIgnoreCase(STARTED_PLAYING)){
 			double time=(double) params;
@@ -77,12 +89,30 @@ public class StreamAppReport extends Report implements ApplicationListener{
 			int ctr= nodeProps.getNrofTimesRequested()+1;
 			nodeProps.setNrofTimesRequested(ctr);
 		}
-			nodeRecord.put(host, nodeProps);
+		else if (event.equalsIgnoreCase(UNCHOKED)){
+			ArrayList<DTNHost> unchokedH = (ArrayList<DTNHost>) params;
+			nodeProps.updateUnchoke(SimClock.getTime(), unchokedH);
+		}
+		else if (event.equalsIgnoreCase(INTERESTED)){
+			ArrayList<DTNHost> interestedH = (ArrayList<DTNHost>) params;
+			nodeProps.updateInterested(SimClock.getTime(), interestedH);
+		}
+		else if (event.equals(UPDATE_AVAILABLE_NEIGHBORS)){
+			ArrayList<DTNHost> availableH = (ArrayList<DTNHost>) params;
+			nodeProps.updateAvailable(SimClock.getTime(), availableH);
+		}
+		nodeRecord.put(host, nodeProps);
 	}
 
 	public void done(){
 		String eol = System.getProperty("line.separator");
 		String chunkRecord="";
+		String nodesUnchoked;
+//		String nodesInterested;
+		String nodesAvailable;
+		
+		String chunksCreated = "Total Chunks Created: " + createdChunks;
+		write(chunksCreated);
 		
 		for (DTNHost h: nodeRecord.keySet()){
 			chunkRecord+= " --------" + h + "---------->" + eol 
@@ -95,10 +125,41 @@ public class StreamAppReport extends Report implements ApplicationListener{
 				 + "time_first_requested: " + nodeRecord.get(h).getTimeFirstRequested() + eol
 				 + "time_first_chunk_received: " + nodeRecord.get(h).getTimeFirstChunkReceived() + eol
 				 + "number_of_times_requested: " + nodeRecord.get(h).getNrofTimesRequested() + eol
-				 + "number_of_chunks_requested_again: " + nodeRecord.get(h).getNrofDuplicateRequest();
+				 + "number_of_chunks_requested_again: " + nodeRecord.get(h).getNrofDuplicateChunks();
+			
+				nodesUnchoked =  " Unchoked nodes: " + eol;
 				
-			write(chunkRecord);
-			chunkRecord="";
+//				Iterator<Entry<Integer, ArrayList<DTNHost>>> iterator= (Iterator<Entry<Integer, ArrayList<DTNHost>>>) nodeRecord.get(h).getUnchokeList().entrySet();
+				Set<Entry<Double,ArrayList<DTNHost>>> entryIt = nodeRecord.get(h).getUnchokeList().entrySet();
+				
+				for (Entry<Double, ArrayList<DTNHost>> entry : entryIt){
+					nodesUnchoked += "     at " + entry.getKey() + ": " + entry.getValue() + eol;
+				}
+				
+//				nodesInterested =  " Interested nodes: " + eol;
+//				Iterator<Entry<Integer, ArrayList<DTNHost>>> iterator= (Iterator<Entry<Integer, ArrayList<DTNHost>>>) nodeRecord.get(h).getUnchokeList().entrySet();
+//				Set<Entry<Double,ArrayList<DTNHost>>> entryInt = nodeRecord.get(h).getInterestedList().entrySet();
+//				
+//				for (Entry<Double, ArrayList<DTNHost>> entry : entryInt){
+//					nodesInterested += "     at " + entry.getKey() + ": " + entry.getValue() + eol;
+//				}
+				
+				nodesAvailable =  " Available nodes: " + eol;
+				
+//				Iterator<Entry<, Set<DTNHost>>> iterator= (Iterator<Entry<Integer, Set<DTNHost>>>) nodeRecord.get(h).getAvailableList().entrySet();
+				Set<Entry<Double,ArrayList<DTNHost>>> entryInt = nodeRecord.get(h).getAvailableList().entrySet();
+				
+				for (Entry<Double, ArrayList<DTNHost>> entry : entryInt){
+					nodesAvailable += "     at " + entry.getKey() + ": " + entry.getValue() + eol;
+				}
+				
+				write(chunkRecord);
+				write(nodesUnchoked);
+//				write(nodesInterested);
+				write(nodesAvailable);
+				chunkRecord="";
+				nodesUnchoked="";
+//				nodesInterested="";
 		}
 		super.done();
 	}
