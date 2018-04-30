@@ -32,6 +32,7 @@ public class StreamAppReport extends Report implements ApplicationListener{
 	public static final String INTERESTED = "INTERESTED";
 	public static final String CHUNK_CREATED = "chunkCreated";
 	public static final String UPDATE_AVAILABLE_NEIGHBORS = "updateAvailableNeighbor";
+	public static final String UPDATE_ACK = "updateAck";
 	
 	private HashMap<DTNHost, NodeProperties> nodeRecord = new HashMap<DTNHost, NodeProperties>();
 	private int createdChunks=0;
@@ -87,6 +88,8 @@ public class StreamAppReport extends Report implements ApplicationListener{
 		}
 		else if (event.equalsIgnoreCase(SENT_REQUEST)){
 			int ctr= nodeProps.getNrofTimesRequested()+1;
+			long id = (long) params;
+			nodeProps.addRequested(id);
 			nodeProps.setNrofTimesRequested(ctr);
 		}
 		else if (event.equalsIgnoreCase(UNCHOKED)){
@@ -100,6 +103,10 @@ public class StreamAppReport extends Report implements ApplicationListener{
 		else if (event.equals(UPDATE_AVAILABLE_NEIGHBORS)){
 			ArrayList<DTNHost> availableH = (ArrayList<DTNHost>) params;
 			nodeProps.updateAvailable(SimClock.getTime(), availableH);
+		}
+		else if (event.equals(UPDATE_ACK)){
+			long ack = (long) params;
+			nodeProps.setAck(ack);
 		}
 		nodeRecord.put(host, nodeProps);
 	}
@@ -120,12 +127,14 @@ public class StreamAppReport extends Report implements ApplicationListener{
 				 + "time_last_played: " + nodeRecord.get(h).getTimeLastPlayed() + eol
 				 + "number_of_times_interrupted: " + nodeRecord.get(h).getNrofTimesInterrupted() + eol
 				 + "number_of_chunks_received (total): " + nodeRecord.get(h).getNrofChunksReceived() + eol
+				 + "ack: " + nodeRecord.get(h).getAck() + eol
 				 + "number_of_duplicate_chunks_received: " + nodeRecord.get(h).getNrofDuplicateChunks() + eol
 				 + "chunks received: " + nodeRecord.get(h).getChunksReceived() +eol
 				 + "time_first_requested: " + nodeRecord.get(h).getTimeFirstRequested() + eol
 				 + "time_first_chunk_received: " + nodeRecord.get(h).getTimeFirstChunkReceived() + eol
 				 + "number_of_times_requested: " + nodeRecord.get(h).getNrofTimesRequested() + eol
-				 + "number_of_chunks_requested_again: " + nodeRecord.get(h).getNrofDuplicateChunks();
+				 + "number_of_chunks_requested_again: " + nodeRecord.get(h).getNrofDuplicateChunks() + eol
+				 + "all_chunks_requested: " + nodeRecord.get(h).getRequested();
 			
 				nodesUnchoked =  " Unchoked nodes: " + eol;
 				

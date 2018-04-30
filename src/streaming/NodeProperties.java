@@ -23,6 +23,8 @@ public class NodeProperties {
 	private LinkedHashMap<Double, ArrayList<DTNHost>> unchoked = new LinkedHashMap<Double, ArrayList<DTNHost>>();
 	private LinkedHashMap<Double, ArrayList<DTNHost>> interested = new LinkedHashMap<Double, ArrayList<DTNHost>>();
 	private LinkedHashMap<Double,ArrayList<DTNHost>> availableH = new LinkedHashMap<Double,ArrayList<DTNHost>>();
+	private ArrayList<Long> requested = new ArrayList<Long>();
+	private long ack;
 	
 	public void addChunk(long chunk){
 		chunksReceived.add(chunk);
@@ -131,6 +133,21 @@ public class NodeProperties {
 	public HashMap<Double, ArrayList<DTNHost>> getAvailableList(){
 		return availableH;
 	}
+	
+	public ArrayList<Long> getRequested(){
+		return requested;
+	}
 
+	public void addRequested(long id){
+		requested.add(id);
+	}
+	
+	public void setAck(long ack){
+		this.ack = ack;
+	}
+	
+	public long getAck(){
+		return ack;
+	}
 
 }

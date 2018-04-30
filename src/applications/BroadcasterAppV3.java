@@ -46,6 +46,8 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	private double lastChokeInterval = 0;
 	private double lastOptimalInterval =0;
 	
+	private ArrayList<DTNHost> temp ;
+	
 //	private HashMap<DTNHost, Long> latestHello;
 	
 	public BroadcasterAppV3(Settings s) {
@@ -57,7 +59,6 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		System.out.println("STIME: "+sTime);
 //		receivedHello = new ArrayList<DTNHost>();
 		initUnchoke();
-		
 	}
 
 	public BroadcasterAppV3(BroadcasterAppV3 a) {
@@ -73,9 +74,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	}
 
 	@Override
-	public Message handle(Message msg, DTNHost host) {
-		System.out.println("-----------------------------------------------------------------");
-		
+	public Message handle(Message msg, DTNHost host) {	
 		String type = (String) msg.getProperty("type");
 		if (type==null) return msg;
 		
@@ -148,8 +147,8 @@ public class BroadcasterAppV3 extends StreamingApplication{
 
 	@Override
 	public void update(DTNHost host) {
-		if (host ==null){
-			host = host;
+		if (this.host==null){
+			this.host = host;
 		}
 		double curTime = SimClock.getTime();
 		
@@ -190,11 +189,9 @@ public class BroadcasterAppV3 extends StreamingApplication{
 						}
 					}
 					
+//					recognized.removeAll(Collections.singleton(null));
+//					System.out.println(host + " Recognized " + recognized);
 					recognized = sortNeighborsByBandwidth(recognized);
-					for(DTNHost h : recognized){
-						int speed = h.getInterface(1).getTransmitSpeed(h.getInterface(1));
-						System.out.println(h + " : " + speed);
-					}
 							
 					unchokeTop3(host, recognized);
 					prevUnchokedList.removeAll(unchoked.subList(0, 3)); //remove an api na yana ha unchoke la gihap
@@ -473,6 +470,9 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	}
 	
 	private void initUnchoke(){
+		temp = new ArrayList<DTNHost>();
+		temp.add(null);
+		
 		for (int i=0; i<4; i++){
 			unchoked.add(i, null);
 		}
