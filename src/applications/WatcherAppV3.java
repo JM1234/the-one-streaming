@@ -200,8 +200,10 @@ public class WatcherAppV3 extends StreamingApplication{
 				
 				if (props.getChunk(chunk.getChunkID())==null){ //if this is not a duplicate
 					props.addChunk(chunk);			
-					updateHello(host, chunk.getChunkID());
+					props.setAck(chunk.getChunkID());
 					sendEventToListeners(StreamAppReport.RECEIVED_CHUNK, chunk.getChunkID(), host);
+					updateHello(host, chunk.getChunkID());
+					sendEventToListeners(StreamAppReport.UPDATE_ACK, props.getAck(), host);
 					System.out.println(host + " updated:  " + props.getBuffermap());
 				}
 				else{
@@ -210,27 +212,17 @@ public class WatcherAppV3 extends StreamingApplication{
 				
 				System.out.println(host+ " received: "+chunk.getChunkID() + " for " + msg.getTo());
 				chunkRequest.remove(chunk.getChunkID()); //remove granted requests
-				
-//				DTNHost sender = msg.getHops().get(msg.getHopCount()-1); //if an naghatag hini na message == broadcastMsg.getFrom
-//				Connection curCon = getCurrConnection(host, sender);
 
 				System.out.println("Ack Now: "+props.getAck()  +  " Received: "+chunk.getChunkID());
-//				System.out.println("Sender " + sender);
 				
-//				if (msg.getTo() == host){
 //					System.out.println("Props start time:" + props.getStartTime());
-					if ( (chunk.getCreationTime() <= props.getStartTime())  && (props.getStartTime() < (chunk.getCreationTime() + Stream.getStreamInterval()))
-						&& props.getAck()==-1){
+				if ( (chunk.getCreationTime() <= props.getStartTime())  && (props.getStartTime() < (chunk.getCreationTime() + Stream.getStreamInterval()))
+					&& props.getAck()==-1){
 //						System.out.println("First chunk received by " + host + ":" +chunk.getChunkID());
-						props.setChunkStart(chunk.getChunkID());
-						status = PLAYING;
-						this.lastTimePlayed=SimClock.getTime();
-					}
-//					else{
-					props.setAck(chunk.getChunkID());
-					sendEventToListeners(StreamAppReport.UPDATE_ACK, props.getAck(), host);
-//					}
-//				}
+					props.setChunkStart(chunk.getChunkID());
+					status = PLAYING;
+					this.lastTimePlayed=SimClock.getTime();
+				}
 			}
 			else if(msg_type.equalsIgnoreCase(BROADCAST_REQUEST)){
 				System.out.println(host + " received request from " +msg.getFrom());
@@ -345,14 +337,9 @@ public class WatcherAppV3 extends StreamingApplication{
 							r.remove();
 						}
 					}
-//					recognized.removeAll(Collections.singleton(null));
 //					System.out.println(host + " Recognized " + recognized);
 					recognized = sortNeighborsByBandwidth(recognized);
-//					for(DTNHost h : recognized){
-//						int speed = h.getInterface(1).getTransmitSpeed(h.getInterface(1));
-//						System.out.println(h + " : " + speed);
-//					}
-//							
+
 					unchokeTop3(host, recognized);
 					prevUnchokedList.removeAll(unchoked.subList(0, 3)); //remove an api na yana ha unchoke la gihap
 			 		recognized.addAll(prevUnchokedList); //iapi an dati na nakaunchoke na diri na api ha top3 ha pag randomize
@@ -381,7 +368,6 @@ public class WatcherAppV3 extends StreamingApplication{
 			lastChokeInterval = curTime;
 			sendEventToListeners(StreamAppReport.UNCHOKED, unchoked.clone(), host);
 			sendEventToListeners(StreamAppReport.INTERESTED, recognized.clone(), host);
-//			System.out.println("Interested Nodes Now: " + recognized + " Unchoked Now: " + unchoked);
 		}
 
 	}
@@ -390,22 +376,23 @@ public class WatcherAppV3 extends StreamingApplication{
 		if (props.getAck() < ack){ //naive, not yet final
 			return true;
 		}
-		for (long has: otherHas){
-			if (!props.getBuffermap().contains(has)){ //if we don't have this
-				return true;
-			}
-		}
-		return false;
+		ArrayList<Long> temp = otherHas;
+		temp.removeAll(props.getBuffermap());
+		temp.removeAll(listOfRequested);
+
+//		for (long has: otherHas){
+//			if (!props.getBuffermap().contains(has)){ //if we don't have this
+//				return true;
+//			}
+//		}
+//		return false;
+		return !temp.isEmpty();
 	}
 	
 	/*
 	 * Evaluates what we should get from available neighbors.
 	 */
 	private void evaluateRequest(DTNHost host, Message msg, boolean isFirst){
-//		System.out.println(host + "@ evaluate request----------------");
-//		System.out.println(host + "TREEMAP OF CHUNK COUNT: " +getChunkCount());
-
-//		ArrayList<DTNHost> currHosts = sortNeighborsByBandwidth(availableNeighbors.keySet());
 		requestFromNeighbors(host,msg.getFrom());
 	}
 	
@@ -420,7 +407,7 @@ public class WatcherAppV3 extends StreamingApplication{
 		ArrayList<Long> otherAvailable = (ArrayList<Long>) availableNeighbors.get(otherNode).clone();
 		otherAvailable.removeAll(props.getBuffermap());
 		otherAvailable.removeAll(listOfRequested); //remove chunks that we already requested
-	
+		Collections.sort(otherAvailable);
 		System.out.println(host + " requesting from this list: " + otherAvailable);
 		
 		int ctr=0;
@@ -513,7 +500,7 @@ public class WatcherAppV3 extends StreamingApplication{
 	}
 	
 	private void sendRequest(DTNHost host, DTNHost to, long chunkNeeded){
-		String id = APP_TYPE + ":request_" + chunkNeeded  + "-" + host.getAddress();
+		String id = APP_TYPE + ":request_" + chunkNeeded  + "-" + host.getAddress()+"-"+ to;
 		
 		Message m = new Message(host, to, id, SIMPLE_MSG_SIZE);		
 		m.addProperty("type", APP_TYPE);
@@ -596,7 +583,7 @@ public class WatcherAppV3 extends StreamingApplication{
 			if (availableNeighbors.containsKey(from)){
 				availableNeighbors.put(from, buffermap);
 			}
-			System.out.println("NEIGHBOR DATA: " + neighborData);
+//			System.out.println("NEIGHBOR DATA: " + neighborData);
 		}catch(Exception e){
 			neighborData.put(from, newBuffermap);
 		}
@@ -654,12 +641,16 @@ public class WatcherAppV3 extends StreamingApplication{
 		// count if an sulod han interested is same la ha mga unchoked
 		if (interestedNeighbors.isEmpty()) return false;
 			
-		for (DTNHost node : interestedNeighbors.keySet()){
-			if (!unchoked.contains(node)){
-				return true;
-			}
-		}
-		return false;
+		ArrayList<DTNHost> nh = new ArrayList<DTNHost> (interestedNeighbors.keySet());
+		nh.removeAll(unchoked);
+		
+		return !nh.isEmpty();
+//		for (DTNHost node : interestedNeighbors.keySet()){
+//			if (!unchoked.contains(node)){
+//				return true;
+//			}
+//		}
+//		return false;
 	}
 
 	/*

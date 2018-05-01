@@ -370,18 +370,23 @@ public class BroadcasterAppV3 extends StreamingApplication{
 ////		}
 //	}
 	
+	
 	private boolean hasNewInterested(){
 		// count if an sulod han interested is same la ha mga unchoked
 		if (interestedNeighbors.isEmpty()) return false;
 			
-		for (DTNHost node : interestedNeighbors.keySet()){
-			if (!unchoked.contains(node)){
-				return true;
-			}
-		}
-		return false;
+		ArrayList<DTNHost> nh = new ArrayList<DTNHost> (interestedNeighbors.keySet());
+		nh.removeAll(unchoked);
+		
+		return !nh.isEmpty();
+//		for (DTNHost node : interestedNeighbors.keySet()){
+//			if (!unchoked.contains(node)){
+//				return true;
+//			}
+//		}
+//		return false;
 	}
-	
+		
 //	private ArrayList<DTNHost> getRecognized(){
 //		int curTime = SimClock.getIntTime();
 //		ArrayList<DTNHost> recognized = new ArrayList<DTNHost>(); //save here the recent INTERESTED requests
@@ -470,9 +475,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	}
 	
 	private void initUnchoke(){
-		temp = new ArrayList<DTNHost>();
-		temp.add(null);
-		
+
 		for (int i=0; i<4; i++){
 			unchoked.add(i, null);
 		}
