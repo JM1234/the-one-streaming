@@ -189,7 +189,6 @@ public abstract class ActiveRouter extends MessageRouter {
 		}
 
 		retVal = con.startTransfer(getHost(), m);
-//		con.getMessage().getSize()< con.getSpeed()
 		if (retVal == RCV_OK) { // started transfer
 			addToSendingConnections(con);
 		}
@@ -551,13 +550,13 @@ public abstract class ActiveRouter extends MessageRouter {
 			return false; // not connected
 		}
 
-//		////ini nala na part akon diri sure
-//		for (int i=0, n=connections.size(); i<n; i++) {
-//			Connection con = connections.get(i);
-//			if (!con.isReadyForTransfer()) {
-//				return true;	// a connection isn't ready for new transfer
-//			}
-//		}
+		////ini nala na part akon diri sure
+		for (int i=0, n=connections.size(); i<n; i++) {
+			Connection con = connections.get(i);
+			if (!con.isReadyForTransfer()) {
+				return true;	// a connection isn't ready for new transfer
+			}
+		}
 
 		return false;
 	}

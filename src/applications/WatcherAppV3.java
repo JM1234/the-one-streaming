@@ -1,22 +1,13 @@
 package applications;
 
 import java.util.ArrayList;
+
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.NavigableMap;
 import java.util.NoSuchElementException;
 import java.util.Random;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ThreadLocalRandom;
 
 import core.Application;
 import core.Connection;
@@ -70,7 +61,7 @@ public class WatcherAppV3 extends StreamingApplication{
 	private ArrayList<Long> listOfRequested;
 	private DTNHost broadcasterAddress;
 	
-	private ArrayList<DTNHost> temp ;
+	private ArrayList<Long> temp ;
 	
 	public WatcherAppV3(Settings s) {
 		super(s);
@@ -104,12 +95,12 @@ public class WatcherAppV3 extends StreamingApplication{
 		if (type==null) return msg;
 		
 		if (type.equals(APP_TYPE)){
-			System.out.println(SimClock.getTime() + "-----------------------------------------------------------------");
+			System.out.println("-------------------------------------------------------------------------------");
 
 			String msg_type = (String) msg.getProperty("msg_type");
 			
 			if (msg_type.equals(BROADCAST_LIVE)){
-				System.out.println(host +" Received a broadcast." + msg.getFrom());
+//				System.out.println(host +" Received a broadcast." + msg.getFrom());
 //				String id = APP_TYPE+":register" + SimClock.getIntTime() + "-" +host.getAddress();
 				
 				if (!isWatching && watcherType==1){
@@ -128,13 +119,13 @@ public class WatcherAppV3 extends StreamingApplication{
 				///for uninterested watcher, just save
 				broadcastMsg = msg.replicate();
 				broadcasterAddress = msg.getFrom();
-				System.out.println("BROADCASTER ADDRESS: " + broadcasterAddress);
+//				System.out.println("BROADCASTER ADDRESS: " + broadcasterAddress);
 				lastChokeInterval = SimClock.getTime();
 				lastOptimalInterval = SimClock.getTime();
 				sendEventToListeners(StreamAppReport.BROADCAST_RECEIVED, SimClock.getTime(), host);
 			}
 			else if (msg_type.equals(HELLO)){
-				try{
+//				try{
 					System.out.println(host + " received hello from "+ msg.getFrom());
 					
 //					DTNHost sender = msg.getHops().get(msg.getHopCount()-1);
@@ -145,10 +136,10 @@ public class WatcherAppV3 extends StreamingApplication{
 					
 					System.out.println(host + " received buffermap : " + otherBuffermap);
 					
-					System.out.println("otherStatus: "+otherStatus + " OtherAck: "+otherAck);
+//					System.out.println("otherStatus: "+otherStatus + " OtherAck: "+otherAck);
 					if (broadcastMsg!=null && otherAck==-1 && otherStatus==-1
 							&& otherBuffermap.isEmpty() ){ //if watcher does not know someone has a stream
-						System.out.println(host + "Other node has no broadcast, sending a broadcast.");
+//						System.out.println(host + "Other node has no broadcast, sending a broadcast.");
 						broadcastMsg.setTo(msg.getFrom());
 						((TVProphetRouterV2) host.getRouter()).addUrgentMessage(broadcastMsg.replicate(), false);
 						
@@ -166,28 +157,30 @@ public class WatcherAppV3 extends StreamingApplication{
 						
 						updateChunksAvailable(msg.getFrom(), otherBuffermap); // save the buffermap received from this neighbor
 						
-						System.out.println("@received new. Available neighbors: " + availableNeighbors);
+//						System.out.println("@received new. Available neighbors: " + availableNeighbors);
 						
 						//if we are unchoked from this node and we can get something from it
 						if (availableNeighbors.containsKey(msg.getFrom()) && isInterested(otherAck,  otherBuffermap)){
-							System.out.println(host + " Immediately requesting.");
+//							System.out.println(host + " Immediately requesting.");
+//							sendEventToListeners("hostname", msg.getFrom(), host);
+//							sendEventToListeners("update", availableNeighbors.get(msg.getFrom()).clone(), host);
 							evaluateRequest(host, msg, isFirst); //evaluate what we can get based on latest updates
 						}
 						else{
-							if (isInterested(otherAck,  otherBuffermap)){ //send interested for the first time
-								System.out.println(host  + " Interested.");
+							ArrayList<Long> temp = (ArrayList<Long>) neighborData.get(msg.getFrom()).clone();
+							if (isInterested(otherAck,  temp)){ //send interested
+//								System.out.println(host  + " Interested.");
 								sendInterested(host, msg.getFrom(), true);
 							}
 							else if(availableNeighbors.containsKey(msg.getFrom())){ //if not interested but it previously unchoked us
 								sendInterested(host, msg.getFrom(), false);
 								availableNeighbors.remove(msg.getFrom());
-								
 							}
 						}
 					}
-				}catch(NullPointerException e){
-					e.printStackTrace();
-				}
+//				}catch(NullPointerException e){
+//					e.printStackTrace();
+//				}
 			}
 			else if(msg_type.equalsIgnoreCase(BROADCAST_CHUNK_SENT)){ //received chunks				
 				
@@ -204,13 +197,13 @@ public class WatcherAppV3 extends StreamingApplication{
 					sendEventToListeners(StreamAppReport.RECEIVED_CHUNK, chunk.getChunkID(), host);
 					updateHello(host, chunk.getChunkID());
 					sendEventToListeners(StreamAppReport.UPDATE_ACK, props.getAck(), host);
-					System.out.println(host + " updated:  " + props.getBuffermap());
+//					System.out.println(host + " updated:  " + props.getBuffermap());
 				}
 				else{
 					sendEventToListeners(StreamAppReport.RECEIVED_DUPLICATE, chunk.getChunkID(), host);
 				}
 				
-				System.out.println(host+ " received: "+chunk.getChunkID() + " for " + msg.getTo());
+//				System.out.println(host+ " received: "+chunk.getChunkID() + " for " + msg.getTo());
 				chunkRequest.remove(chunk.getChunkID()); //remove granted requests
 
 				System.out.println("Ack Now: "+props.getAck()  +  " Received: "+chunk.getChunkID());
@@ -225,31 +218,40 @@ public class WatcherAppV3 extends StreamingApplication{
 				}
 			}
 			else if(msg_type.equalsIgnoreCase(BROADCAST_REQUEST)){
-				System.out.println(host + " received request from " +msg.getFrom());
+//				System.out.println(host + " received request from " +msg.getFrom());
 			
 				long chunkNeeded = (long) msg.getProperty("chunk");
 				
-				System.out.println("ReceivedRequest from "+msg.getFrom());
+//				System.out.println("ReceivedRequest from "+msg.getFrom());
 				if (props.getChunk(chunkNeeded)!=null){
 					sendChunk(props.getChunk(chunkNeeded), host, msg.getFrom()); //simply sending. no buffer limit yet
 				}
 			}
 			else if (msg_type.equals(INTERESTED)){
-				System.out.println(host + " received INTERESTED from " + msg.getFrom());
+//				System.out.println(host + " received INTERESTED from " + msg.getFrom());
 				//evaluate response if choke or unchoke
 				interestedNeighbors.put(msg.getFrom(), (int) msg.getCreationTime());
-				System.out.println("Interested: " + interestedNeighbors);
-				evaluateResponse(host, msg.getFrom());	
+//				System.out.println("Interested: " + interestedNeighbors);
+				evaluateResponse(host, msg.getFrom());
 			}
 			else if (msg_type.equals(UNCHOKE)){
-				System.out.println(host + " received UNCHOKE from " + msg.getFrom());
+//				System.out.println(host + " received UNCHOKE from " + msg.getFrom());
+				
 				availableNeighbors.put(msg.getFrom(), (ArrayList<Long>) neighborData.get(msg.getFrom()).clone()); //add this to available neighbors
+				
+				/*
+				 * 
+				 */
+//				sendEventToListeners("hostname", msg.getFrom(), host);
+//				sendEventToListeners("update", availableNeighbors.get(msg.getFrom()).clone(), host);
+				//end
+				
 				evaluateRequest(host, msg, isFirst);
 				ArrayList<DTNHost> availableH = new ArrayList<DTNHost>(availableNeighbors.keySet());
 				sendEventToListeners(StreamAppReport.UPDATE_AVAILABLE_NEIGHBORS, availableH, host);
 			}
 			else if (msg_type.equals(CHOKE)){
-				System.out.println(host + " received CHOKE from " + msg.getFrom());
+//				System.out.println(host + " received CHOKE from " + msg.getFrom());
 				//remove didi an neighbors na dati nag unchoke ha at. diri na hya api ha mga dapat aruan
 				availableNeighbors.remove(msg.getFrom());
 				ArrayList<DTNHost> availableH = new ArrayList<DTNHost>(availableNeighbors.keySet());
@@ -292,7 +294,7 @@ public class WatcherAppV3 extends StreamingApplication{
 					props.playNext();
 					status = PLAYING;
 					this.lastTimePlayed = curTime;
-					System.out.println(host + " playing: " + props.getPlaying() + " time: "+lastTimePlayed);
+//					System.out.println(host + " playing: " + props.getPlaying() + " time: "+lastTimePlayed);
 					if (props.getPlaying() == 1) {
 						sendEventToListeners(StreamAppReport.STARTED_PLAYING, lastTimePlayed, host);
 					}
@@ -304,7 +306,7 @@ public class WatcherAppV3 extends StreamingApplication{
 					status = WAITING;
 					sendEventToListeners(StreamAppReport.INTERRUPTED, null, host);
 					
-					System.out.println(host+ " waiting: "+ props.getNext());
+//					System.out.println(host+ " waiting: "+ props.getNext());
 //					//send request here again if request is expired. because last chunk requested did not arrive
 //				
 //					if (bufferring==10){
@@ -320,12 +322,12 @@ public class WatcherAppV3 extends StreamingApplication{
 		
 		//for maintaining -- choking and unchoking
 		if (curTime-lastChokeInterval >=5){
-			System.out.println("CHOKE INTERVALTRIGGERED!" + curTime);
+//			System.out.println("CHOKE INTERVALTRIGGERED!" + curTime);
 			ArrayList<DTNHost> recognized =  new ArrayList<DTNHost>(interestedNeighbors.keySet());
 			
 			if (hasNewInterested()){
 				
-				System.out.println("Interested Nodes: " + recognized + " Unchoked: " + unchoked);
+//				System.out.println("Interested Nodes: " + recognized + " Unchoked: " + unchoked);
 				ArrayList<DTNHost> prevUnchokedList = (ArrayList<DTNHost>) unchoked.clone();
 				
 				if (curTime-lastOptimalInterval >= 15){ //optimistic interval = every 15 seconds
@@ -400,24 +402,33 @@ public class WatcherAppV3 extends StreamingApplication{
 	 * called everytime availableNeighbors is updated
 	 */
 	private void requestFromNeighbors(DTNHost host, DTNHost otherNode){ 
-		System.out.println("@request from neighbors");
+//		System.out.println("@request from neighbors");
 //		long mostUrgent = urgentChunk+1; //request is in sequential form
 		
-		this.maximumRequestPerNode = MAXIMUM_PENDING_REQUEST/availableNeighbors.size(); //be sure what really happens with this
-		ArrayList<Long> otherAvailable = (ArrayList<Long>) availableNeighbors.get(otherNode).clone();
+//		this.maximumRequestPerNode = MAXIMUM_PENDING_REQUEST/availableNeighbors.size(); //be sure what really happens with this
+		ArrayList<Long> otherAvailable = new ArrayList (availableNeighbors.get(otherNode)); //.clone();
+		
+		sendEventToListeners("hostname", otherNode, host);
+		sendEventToListeners("update", otherAvailable.clone(), host);
+		
+//		System.out.println(host + "original buffermap list: " + otherAvailable);
 		otherAvailable.removeAll(props.getBuffermap());
 		otherAvailable.removeAll(listOfRequested); //remove chunks that we already requested
 		Collections.sort(otherAvailable);
+		
 		System.out.println(host + " requesting from this list: " + otherAvailable);
+		System.out.println(host +  " ack: " + props.getAck());
+		System.out.println(host  + " THIS IS OLAAA: " + otherAvailable);
 		
 		int ctr=0;
-		for (Long chunk: otherAvailable){
-			if (ctr<maximumRequestPerNode && chunkRequest.size()<MAXIMUM_PENDING_REQUEST){
+		for (long chunk: otherAvailable){
+			if (chunkRequest.size()<MAXIMUM_PENDING_REQUEST){ //ctr<maximumRequestPerNode && 
 				sendRequest(host, otherNode, chunk);
+				chunkRequest.put(chunk, (double) (SimClock.getIntTime()+WAITING_THRESHOLD)); //add to requested chunks
+				listOfRequested.add(chunk);
 				ctr++;
 			}
 		}
-		
 		
 		/*
 		Map<DTNHost, ArrayList<Long>> map = new ConcurrentHashMap<DTNHost, ArrayList<Long>>(neighborsCopy);
@@ -476,7 +487,7 @@ public class WatcherAppV3 extends StreamingApplication{
 	}
 	
 	private void sendInterested(DTNHost host, DTNHost to, boolean isInterested) {
-		System.out.println(host + " sending interested to " + to);
+//		System.out.println(host + " sending interested to " + to);
 		
 		String id;
 		String msgType;
@@ -511,31 +522,29 @@ public class WatcherAppV3 extends StreamingApplication{
 		host.createNewMessage(m);
 //		m.setTtl(7 + MAX_REQUEST_PER_NODE);
 		
-		chunkRequest.put(chunkNeeded, (double) (SimClock.getIntTime()+WAITING_THRESHOLD)); //add to requested chunks
-		listOfRequested.add(chunkNeeded);
-		lastTimeRequested = SimClock.getTime();
+//		lastTimeRequested = SimClock.getTime();
 //		System.out.println("Sent request to " + to);
 		sendEventToListeners(StreamAppReport.SENT_REQUEST, chunkNeeded,host);
 	}
 	
-	private void resendExpiredRequest(DTNHost host){
-		double curTime = SimClock.getTime();
-		for (long chunkID : chunkRequest.keySet()){
-			if (chunkRequest.get(chunkID) <= curTime ){ // if request we sent is expired
-				//request again
-				
-				for (DTNHost otherHost: sortNeighborsByBandwidth(availableNeighbors.keySet())){
-					if (availableNeighbors.get(otherHost).contains(chunkID)) {
-						sendRequest(host, otherHost, chunkID);
-						//must put limit hanggang kailan dapat adi didi
-						chunkRequest.put(chunkID, curTime + WAITING_THRESHOLD); //deadline is something seconds before it will be played
-						sendEventToListeners(StreamAppReport.RESENT_REQUEST, null, host);
-						break;
-					}
-				}
-			}
-		}
-	}
+//	private void resendExpiredRequest(DTNHost host){
+//		double curTime = SimClock.getTime();
+//		for (long chunkID : chunkRequest.keySet()){
+//			if (chunkRequest.get(chunkID) <= curTime ){ // if request we sent is expired
+//				//request again
+//				
+//				for (DTNHost otherHost: sortNeighborsByBandwidth(availableNeighbors.keySet())){
+//					if (availableNeighbors.get(otherHost).contains(chunkID)) {
+//						sendRequest(host, otherHost, chunkID);
+//						//must put limit hanggang kailan dapat adi didi
+//						chunkRequest.put(chunkID, curTime + WAITING_THRESHOLD); //deadline is something seconds before it will be played
+//						sendEventToListeners(StreamAppReport.RESENT_REQUEST, null, host);
+//						break;
+//					}
+//				}
+//			}
+//		}
+//	}
 	
 	@Override
 	protected void sendChunk(StreamChunk chunk, DTNHost host, DTNHost to) {
@@ -554,14 +563,13 @@ public class WatcherAppV3 extends StreamingApplication{
 
 	public void updateHello(DTNHost host, long newChunk){
 //		long currAck=props.getAck();
-		
+//		System.out.println(host + " RECEIVED NEW: " + newChunk);
 		for (DTNHost h : sentHello){
 //			long lastChunkSent = sentHello.get(h);
 			if (!h.equals(broadcasterAddress)){
 				ArrayList<Long> latest = new ArrayList<Long>();
 				latest.add(newChunk);
 				sendBuffermap(host, h, latest);
-				
 //				int firstIndex = stream.getBuffermap().indexOf(lastChunkSent)+1;
 //				int lastIndex = stream.getBuffermap().size();
 //				ArrayList<Long> latestUpdates = new ArrayList<Long> (stream.getBuffermap().subList(firstIndex, lastIndex));
@@ -573,21 +581,26 @@ public class WatcherAppV3 extends StreamingApplication{
 
 	
 	public void updateChunksAvailable(DTNHost from, ArrayList<Long> newBuffermap){
-		System.out.println("newbuffermap" + newBuffermap);
+//		System.out.println("newbuffermap" + newBuffermap);
 		ArrayList<Long> buffermap = null;
-		try{
-			buffermap = (ArrayList<Long>) neighborData.get(from);
+		
+		if (neighborData.containsKey(from)){
+			buffermap = (ArrayList<Long>) neighborData.get(from).clone();
+//			System.out.println("OLD BUFFERMAP: " + buffermap);
 			buffermap.addAll(newBuffermap); //put new buffermap
-			System.out.println("BUFFERMAP updated: " + buffermap);
-			neighborData.put(from, buffermap); 
-			if (availableNeighbors.containsKey(from)){
-				availableNeighbors.put(from, buffermap);
-			}
-//			System.out.println("NEIGHBOR DATA: " + neighborData);
-		}catch(Exception e){
-			neighborData.put(from, newBuffermap);
+//			System.out.println("UPDATED BUFFERMAP: " + buffermap);
+			neighborData.put(from, (ArrayList<Long>) buffermap.clone()); 
 		}
-		updateChunkCount(newBuffermap); //increase count of chunks 
+		else{
+			neighborData.put(from, (ArrayList<Long>) newBuffermap.clone());
+		}
+		
+		if (availableNeighbors.containsKey(from)){
+			availableNeighbors.put(from, buffermap);
+		}
+//		System.out.println(host + "NEIGHBOR DATA: " + neighborData);
+		updateChunkCount(newBuffermap); //increase count of chunks
+		
 	}
 
 	/*
@@ -596,7 +609,7 @@ public class WatcherAppV3 extends StreamingApplication{
 	 * 
 	 */
 	public void evaluateResponse(DTNHost host, DTNHost to){ //evaluate if we should choke or unchoke this node that sent INTERESTED at time before chokeInterval
-		System.out.println("@ evaluating response");
+//		System.out.println("@ evaluating response");
 		int ctr=0;
 		try{
 			while(unchoked.get(ctr)!=null && ctr<4){
@@ -608,7 +621,7 @@ public class WatcherAppV3 extends StreamingApplication{
 			sendResponse(host, to, true);
 			unchoked.set(ctr,to);
 			sendEventToListeners(StreamAppReport.UNCHOKED, unchoked, host);
-			System.out.println(host +" ADDED TO UNCHOKED: "+ to);
+//			System.out.println(host +" ADDED TO UNCHOKED: "+ to);
 			interestedNeighbors.remove(to); //remove from interestedNeighbors since granted
 		}
 	}
@@ -621,12 +634,12 @@ public class WatcherAppV3 extends StreamingApplication{
 		if (isOkay){
 			id = APP_TYPE + ":UNCHOKE_" + SimClock.getIntTime() + "-" + host.getAddress()  + "-" + to;
 			msgType = UNCHOKE;
-			System.out.println(host + " sending unchoke to " + to);
+//			System.out.println(host + " sending unchoke to " + to);
 		}
 		else{
 			id = APP_TYPE + ":CHOKE_" + SimClock.getIntTime() + "-" + host.getAddress()  +"-" + to;
 			msgType = CHOKE;
-			System.out.println(host + " sending choke to " + to);
+//			System.out.println(host + " sending choke to " + to);
 		}
 		
 		Message m = new Message(host, to, id, SIMPLE_MSG_SIZE);		
@@ -658,18 +671,16 @@ public class WatcherAppV3 extends StreamingApplication{
 	 * after this method, unchoked list is updated. recognized includes those na diri na api ha top3
 	 */
 	private void unchokeTop3(DTNHost host, ArrayList<DTNHost> recognized){
-		System.out.println("@top3---->");
-		System.out.println("INITIAL    Recognized: " + recognized + " Unchoked: " + unchoked);
+//		System.out.println("@top3---->");
+//		System.out.println("INITIAL    Recognized: " + recognized + " Unchoked: " + unchoked);
 		if (recognized.isEmpty()) return;
 
 		Iterator<DTNHost> i = recognized.iterator();
-		
-		
  		for (int ctr=0; ctr<3; ctr++){ //send UNCHOKE to top 3
 			DTNHost other=null;
 			try{
 				other = i.next();	
-				if (!unchoked.contains(other)){ //if diri hya api ha kanina na group of unchoked
+				if (!unchoked.contains(other) && other!=null){ //if diri hya api ha kanina na group of unchoked
 					sendResponse(host, other, true); //send UNCHOKE
 					interestedNeighbors.remove(other); //for those new interested
 				}
@@ -685,19 +696,19 @@ public class WatcherAppV3 extends StreamingApplication{
 	 * 
 	 */
 	private void unchokeRand(DTNHost host, ArrayList<DTNHost> recognized, ArrayList<DTNHost> prevUnchoked){ 	//every 5 seconds. i-sure na diri same han last //tas diri dapat api ha top3
-		System.out.println("@rand---->");
-		System.out.println("INITIAL    Recognized: " + recognized + " Unchoked: " + unchoked);
+//		System.out.println("@rand---->");
+//		System.out.println("INITIAL    Recognized: " + recognized + " Unchoked: " + unchoked);
 		if (recognized.isEmpty()) return;
 
 		Random r = new Random();
 		DTNHost prevRand;
 		recognized.removeAll(unchoked.subList(0, 3)); //remove pagpili random an ada na ha unchoked list
-		System.out.println("Recognized now without all those at unchoked:" + recognized);
+//		System.out.println("Recognized now without all those at unchoked:" + recognized);
 		prevRand = unchoked.get(3);
 
 		int index = r.nextInt(recognized.size()); //possible ini maging same han last random
 		DTNHost randNode = recognized.get(index);
-		System.out.println("index chosen: " + index);
+//		System.out.println("index chosen: " + index);
 
 		if (prevRand!=randNode){
 			sendResponse(host, prevRand, false); //send CHOKE to this random node if it is not the same with new node
@@ -707,7 +718,7 @@ public class WatcherAppV3 extends StreamingApplication{
 			}
 		}
 		updateUnchoked(3, randNode);
-		System.out.println("UNCHOOOOOKKKKEEED=== " + unchoked + " @ time: " + SimClock.getIntTime());
+//		System.out.println("UNCHOOOOOKKKKEEED=== " + unchoked + " @ time: " + SimClock.getIntTime());
 		interestedNeighbors.remove(randNode);  //notification granted. remove on original interested list
 		recognized.remove(randNode); //notification granted. remove on recognized list
 	}
@@ -715,12 +726,13 @@ public class WatcherAppV3 extends StreamingApplication{
 	private void chokeOthers(DTNHost host, ArrayList<DTNHost> recognized){
 		//sendChoke to tanan na nabilin
 		for (DTNHost r : recognized){
-			sendResponse(host, r, false); 
+			if (r!=null)
+				sendResponse(host, r, false); 
 		}
 	}
 	
 	private void initUnchoke(){
-		temp = new ArrayList<DTNHost>();
+		temp = new ArrayList<Long>();
 		temp.add(null);
 		
 		for (int i=0; i<4; i++){

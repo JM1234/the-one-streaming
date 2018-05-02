@@ -6,7 +6,7 @@
 Scenario.name = DTNStreaming
 Scenario.simulateConnections = true
 Scenario.updateInterval = 0.01
-Scenario.endTime = 201.8
+Scenario.endTime = 102
 Scenario.nrofHostGroups = 1
 
 ## Interface-specific settings:
@@ -49,7 +49,7 @@ wifiDirectInterface.transmitRange = 250
 Group.movementModel = RandomWaypoint
 Group.router = EpidemicRouter
 TVProphetRouterV2.secondsInTimeUnit=1
-Group.bufferSize = 500M
+Group.bufferSize = 5000M
 # All nodes have the bluetooth interface
 Group.nrofInterfaces = 1
 Group.interface1 = btInterface

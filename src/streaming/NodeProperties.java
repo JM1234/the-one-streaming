@@ -26,6 +26,13 @@ public class NodeProperties {
 	private ArrayList<Long> requested = new ArrayList<Long>();
 	private long ack;
 	
+	private ArrayList<Long> couldHaveRequested = new ArrayList<Long>();
+	
+//	public ArrayList<DTNHost> hostNames = new ArrayList<DTNHost>();
+//	public ArrayList<ArrayList<Long>> toSearch =  new ArrayList<ArrayList<Long>>();
+
+	public HashMap<DTNHost, ArrayList<Long>> toSearch = new HashMap<DTNHost, ArrayList<Long>>();
+	
 	public void addChunk(long chunk){
 		chunksReceived.add(chunk);
 	}
@@ -150,4 +157,13 @@ public class NodeProperties {
 		return ack;
 	}
 
+	public void addCouldHaveRequested(ArrayList<Long> couldHaveRequested){
+		this.couldHaveRequested.addAll(couldHaveRequested);
+	}
+	
+	public ArrayList<Long> getCouldHaveRequested(){
+		return couldHaveRequested;
+	}
+	
+	
 }

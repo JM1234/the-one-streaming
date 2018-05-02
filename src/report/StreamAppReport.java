@@ -108,6 +108,10 @@ public class StreamAppReport extends Report implements ApplicationListener{
 			long ack = (long) params;
 			nodeProps.setAck(ack);
 		}
+		else if (event.equalsIgnoreCase("THIS WILL WORK T_T.")){
+			ArrayList<Long> couldHaveRequested = (ArrayList<Long>) params;
+			nodeProps.addCouldHaveRequested(couldHaveRequested);
+		}
 		nodeRecord.put(host, nodeProps);
 	}
 
@@ -121,8 +125,9 @@ public class StreamAppReport extends Report implements ApplicationListener{
 		String chunksCreated = "Total Chunks Created: " + createdChunks;
 		write(chunksCreated);
 		
+
 		for (DTNHost h: nodeRecord.keySet()){
-			chunkRecord+= " --------" + h + "---------->" + eol 
+				chunkRecord+= " --------" + h + "---------->" + eol 
 				 + "time_started_playing: " +  nodeRecord.get(h).getTimeStartedPlaying() + eol
 				 + "time_last_played: " + nodeRecord.get(h).getTimeLastPlayed() + eol
 				 + "number_of_times_interrupted: " + nodeRecord.get(h).getNrofTimesInterrupted() + eol
@@ -134,16 +139,17 @@ public class StreamAppReport extends Report implements ApplicationListener{
 				 + "time_first_chunk_received: " + nodeRecord.get(h).getTimeFirstChunkReceived() + eol
 				 + "number_of_times_requested: " + nodeRecord.get(h).getNrofTimesRequested() + eol
 				 + "number_of_chunks_requested_again: " + nodeRecord.get(h).getNrofDuplicateChunks() + eol
-				 + "all_chunks_requested: " + nodeRecord.get(h).getRequested();
-			
-				nodesUnchoked =  " Unchoked nodes: " + eol;
+//				 + "all_chunks_requested: " + nodeRecord.get(h).getRequested();
+				 + "could_have_requested: " + nodeRecord.get(h).getCouldHaveRequested();
 				
-//				Iterator<Entry<Integer, ArrayList<DTNHost>>> iterator= (Iterator<Entry<Integer, ArrayList<DTNHost>>>) nodeRecord.get(h).getUnchokeList().entrySet();
-				Set<Entry<Double,ArrayList<DTNHost>>> entryIt = nodeRecord.get(h).getUnchokeList().entrySet();
-				
-				for (Entry<Double, ArrayList<DTNHost>> entry : entryIt){
-					nodesUnchoked += "     at " + entry.getKey() + ": " + entry.getValue() + eol;
-				}
+// 				nodesUnchoked =  " Unchoked nodes: " + eol;
+//				
+////				Iterator<Entry<Integer, ArrayList<DTNHost>>> iterator= (Iterator<Entry<Integer, ArrayList<DTNHost>>>) nodeRecord.get(h).getUnchokeList().entrySet();
+//				Set<Entry<Double,ArrayList<DTNHost>>> entryIt = nodeRecord.get(h).getUnchokeList().entrySet();
+//				
+//				for (Entry<Double, ArrayList<DTNHost>> entry : entryIt){
+//					nodesUnchoked += "     at " + entry.getKey() + ": " + entry.getValue() + eol;
+//				}
 				
 //				nodesInterested =  " Interested nodes: " + eol;
 //				Iterator<Entry<Integer, ArrayList<DTNHost>>> iterator= (Iterator<Entry<Integer, ArrayList<DTNHost>>>) nodeRecord.get(h).getUnchokeList().entrySet();
@@ -163,12 +169,13 @@ public class StreamAppReport extends Report implements ApplicationListener{
 				}
 				
 				write(chunkRecord);
-				write(nodesUnchoked);
+//				write(nodesUnchoked);
 //				write(nodesInterested);
 				write(nodesAvailable);
 				chunkRecord="";
+				nodesAvailable="";
 				nodesUnchoked="";
-//				nodesInterested="";
+//					nodesInterested="";
 		}
 		super.done();
 	}
