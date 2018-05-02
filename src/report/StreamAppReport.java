@@ -138,9 +138,9 @@ public class StreamAppReport extends Report implements ApplicationListener{
 				 + "time_first_requested: " + nodeRecord.get(h).getTimeFirstRequested() + eol
 				 + "time_first_chunk_received: " + nodeRecord.get(h).getTimeFirstChunkReceived() + eol
 				 + "number_of_times_requested: " + nodeRecord.get(h).getNrofTimesRequested() + eol
-				 + "number_of_chunks_requested_again: " + nodeRecord.get(h).getNrofDuplicateChunks() + eol
+				 + "number_of_chunks_requested_again: " + nodeRecord.get(h).getNrofDuplicateChunks() + eol;
 //				 + "all_chunks_requested: " + nodeRecord.get(h).getRequested();
-				 + "could_have_requested: " + nodeRecord.get(h).getCouldHaveRequested();
+//				 + "could_have_requested: " + nodeRecord.get(h).getCouldHaveRequested();
 				
 // 				nodesUnchoked =  " Unchoked nodes: " + eol;
 //				
@@ -159,23 +159,23 @@ public class StreamAppReport extends Report implements ApplicationListener{
 //					nodesInterested += "     at " + entry.getKey() + ": " + entry.getValue() + eol;
 //				}
 				
-				nodesAvailable =  " Available nodes: " + eol;
+//				nodesAvailable =  " Available nodes: " + eol;
 				
 //				Iterator<Entry<, Set<DTNHost>>> iterator= (Iterator<Entry<Integer, Set<DTNHost>>>) nodeRecord.get(h).getAvailableList().entrySet();
-				Set<Entry<Double,ArrayList<DTNHost>>> entryInt = nodeRecord.get(h).getAvailableList().entrySet();
-				
-				for (Entry<Double, ArrayList<DTNHost>> entry : entryInt){
-					nodesAvailable += "     at " + entry.getKey() + ": " + entry.getValue() + eol;
-				}
+//				Set<Entry<Double,ArrayList<DTNHost>>> entryInt = nodeRecord.get(h).getAvailableList().entrySet();
+//				
+//				for (Entry<Double, ArrayList<DTNHost>> entry : entryInt){
+//					nodesAvailable += "     at " + entry.getKey() + ": " + entry.getValue() + eol;
+//				}
 				
 				write(chunkRecord);
 //				write(nodesUnchoked);
 //				write(nodesInterested);
-				write(nodesAvailable);
+//				write(nodesAvailable);
 				chunkRecord="";
-				nodesAvailable="";
+//				nodesAvailable="";
 				nodesUnchoked="";
-//					nodesInterested="";
+//				nodesInterested="";
 		}
 		super.done();
 	}

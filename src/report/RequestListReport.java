@@ -38,6 +38,7 @@ public class RequestListReport extends Report implements ApplicationListener{
 		if (event.equalsIgnoreCase("HOSTNAME")){
 			DTNHost from = (DTNHost) params;
 			this.currHost = from;
+			System.out.println("hello @ REPORTS");
 		}
 		else if (event.equalsIgnoreCase("UPDATE")){
 			ArrayList<Long> update = (ArrayList<Long>) params;
@@ -53,12 +54,14 @@ public class RequestListReport extends Report implements ApplicationListener{
 		String line= " ";
 		for (DTNHost h: nodeRecord.keySet()){
 	
-			line += h + " : " + eol;
+			line = h + " : " + eol;
 			for (DTNHost currH : nodeRecord.get(h).toSearch.keySet()){
 				line+= "      " + currH + " : " + nodeRecord.get(h).toSearch.get(currH) + eol;
 			}
+//			System.out.println("LINE: "+ line);
+			write(line);
 		}
-		write(line);
+		super.done();
 
 	}
 }

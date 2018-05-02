@@ -169,14 +169,14 @@ public class TVProphetRouterV2 extends ActiveRouter {
 		//get first message han iya buffer, get first message han ak buffer
 		//if the creationTime of otherNode's first message on the buffer is less than mine,
 		//call exchangeUrgentMessages
-//		if (exchangeUrgentMessages() !=null){
-//			return;
-//		}
+		if (exchangeUrgentMessages() !=null){
+			return;
+		}
 		
 //		// try messages that could be delivered to final recipient
-		if (exchangeDeliverableMessages() != null) { ////bago ini, check anay kun hino it dapat mauna pag send between two connections
-			return;	
-		}
+//		if (exchangeDeliverableMessages() != null) { ////bago ini, check anay kun hino it dapat mauna pag send between two connections
+//			return;	
+//		}
 //		
 //		tryOtherMessages();	
 	} 
