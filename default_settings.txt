@@ -23,8 +23,8 @@ btInterface.transmitSpeed = 200k
 btInterface.transmitRange = 60
 
 wifiDirectInterface.type = InterferenceLimitedInterface
-wifiDirectInterface.transmitSpeed = 250000k
-wifiDirectInterface.transmitRange = 250
+wifiDirectInterface.transmitSpeed = 250M
+wifiDirectInterface.transmitRange = 200
 
 ## Group-specific settings:
 # groupID : Group's identifier. Used as the prefix of host names
@@ -102,5 +102,7 @@ Report.reportDir = reports/DTNStreaming
 
 ## Optimization settings -- these affect the speed of the simulation
 ## see World class for details.
-Optimization.cellSizeMult = 5
+Optimization.cellSizeMult = 20
 Optimization.randomizeUpdateOrder = true
+
+GUI.EventLogPanel.nrofEvents = 0

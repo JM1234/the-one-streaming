@@ -1,12 +1,14 @@
 package report;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import applications.StreamingApplication;
 import core.Application;
@@ -14,7 +16,6 @@ import core.ApplicationListener;
 import core.DTNHost;
 import core.SimClock;
 import streaming.NodeProperties;
-import streaming.StreamChunk;
 
 public class StreamAppReport extends Report implements ApplicationListener{
 
@@ -132,7 +133,7 @@ public class StreamAppReport extends Report implements ApplicationListener{
 				 + "number_of_times_interrupted: " + nodeRecord.get(h).getNrofTimesInterrupted() + eol
 				 + "number_of_chunks_received (total): " + nodeRecord.get(h).getNrofChunksReceived() + eol
 				 + "ack: " + nodeRecord.get(h).getAck() + eol
-				 + "chunks_requested: " + nodeRecord.get(h).getChunksReceived().values() + eol
+				 + "chunks_requested: " + nodeRecord.get(h).getChunksReceived().keySet() + eol
 				 + "number_of_duplicate_chunks_received: " + nodeRecord.get(h).getNrofDuplicateChunks() + eol
 				 + "time_first_requested: " + nodeRecord.get(h).getTimeFirstRequested() + eol
 				 + "time_first_chunk_received: " + nodeRecord.get(h).getTimeFirstChunkReceived() + eol
@@ -185,4 +186,5 @@ public class StreamAppReport extends Report implements ApplicationListener{
 		}
 		super.done();
 	}
+	
 }
