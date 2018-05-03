@@ -38,7 +38,6 @@ public class RequestListReport extends Report implements ApplicationListener{
 		if (event.equalsIgnoreCase("HOSTNAME")){
 			DTNHost from = (DTNHost) params;
 			this.currHost = from;
-			System.out.println("hello @ REPORTS");
 		}
 		else if (event.equalsIgnoreCase("UPDATE")){
 			ArrayList<Long> update = (ArrayList<Long>) params;

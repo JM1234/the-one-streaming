@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
+import java.util.TreeMap;
 
 import fragmentation.Fragment;
 
@@ -15,13 +16,13 @@ public class StreamProperties {
 	
 	private String streamID;
 	private ArrayList<Fragment> receivedFragments;
-	private LinkedHashMap<Long, StreamChunk> receivedChunks;
+	private TreeMap<Long, StreamChunk> receivedChunks;
 	
 	private long ack=-1; //last consecutive sent
 
 	public StreamProperties(String streamID){
 		this.streamID = streamID;
-		receivedChunks = new LinkedHashMap<Long, StreamChunk>();
+		receivedChunks = new TreeMap<Long, StreamChunk>();
 		receivedFragments = new ArrayList<Fragment>();
 	}
 	
@@ -36,7 +37,7 @@ public class StreamProperties {
 		while (receivedChunks.containsKey(ack+1)){
 			ack++;
 		}
-//		System.out.println("Ack: "+ack);
+		System.out.println("Ack: "+ack);
 	}
 	
 	public long getAck(){

@@ -156,6 +156,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 			startBroadcast(host);
 			broadcasted =  true;
 		}
+		
 		checkHelloedConnection(host); //remove data of disconnected nodes
 		
 		if (broadcasted){
@@ -270,23 +271,29 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	
 	public void updateHello(DTNHost host){
 		long currAck=-1;
+		int ctrNeighbors=0;
 		
 		if (stream.getLatestChunk()!=null){
 			currAck = stream.getLatestChunk().getChunkID();
 		}
 		
-		for (DTNHost h : sentHello){
-//			long lastChunkSent = sentHello.get(h);
-//			if (lastChunkSent<currAck){
-//				int firstIndex = stream.getBuffermap().indexOf(lastChunkSent)+1;
-//				int lastIndex = stream.getBuffermap().size();
-//				ArrayList<Long> latestUpdates = new ArrayList<Long> (stream.getBuffermap().subList(firstIndex, lastIndex));
-				ArrayList<Long> latest = new ArrayList<Long>();
-				latest.add(currAck);
+		ArrayList<Long> latest = new ArrayList<Long>();
+		latest.add(currAck);
+		
+		for (DTNHost h: unchoked){
+			if (h!=null){
 				sendBuffermap(host, h, latest);
-//				sentHello.put(h, stream.getChunk(lastIndex-1).getChunkID());
-//				System.out.println("Last hello sent: " + stream.getChunk(lastIndex-1).getChunkID());
-//			}
+				ctrNeighbors++;
+			}
+		}
+		
+		for (DTNHost h: sentHello){
+			if (!unchoked.contains(h)){
+				sendBuffermap(host, h, latest);
+				ctrNeighbors++;
+//				if (ctrNeighbors>=8)
+//					break;
+			}
 		}
 	}	
 	
@@ -347,11 +354,12 @@ public class BroadcasterAppV3 extends StreamingApplication{
 			msgType = CHOKE;
 //			System.out.println(host + " sending choke to " + to);
 		}
-		
+
 		Message m = new Message(host, to, id, SIMPLE_MSG_SIZE);		
 		m.addProperty("type", APP_TYPE);
 		m.setAppID(APP_ID);
 		m.addProperty("msg_type", msgType);
+		m.addProperty("buffermap", stream.getBuffermap());
 		m.addProperty(TVProphetRouterV2.MESSAGE_WEIGHT, 4);
 		host.createNewMessage(m);
 	}

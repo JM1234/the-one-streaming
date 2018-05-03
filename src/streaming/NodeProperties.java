@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.Map.Entry;
 
 import core.DTNHost;
+import core.SimClock;
 
 public class NodeProperties {
 
@@ -19,12 +20,13 @@ public class NodeProperties {
 	private int nrofDuplicateChunks=0;
 	private int nrofDuplicateRequest=0;
 	private int nrofTimesRequested=0;
-	private ArrayList<Long> chunksReceived= new ArrayList<Long>();;
+	private LinkedHashMap<Double, Long> chunksReceived= new LinkedHashMap<Double, Long>();;
 	private LinkedHashMap<Double, ArrayList<DTNHost>> unchoked = new LinkedHashMap<Double, ArrayList<DTNHost>>();
 	private LinkedHashMap<Double, ArrayList<DTNHost>> interested = new LinkedHashMap<Double, ArrayList<DTNHost>>();
 	private LinkedHashMap<Double,ArrayList<DTNHost>> availableH = new LinkedHashMap<Double,ArrayList<DTNHost>>();
 	private ArrayList<Long> requested = new ArrayList<Long>();
 	private long ack;
+	
 	
 	private ArrayList<Long> couldHaveRequested = new ArrayList<Long>();
 	
@@ -34,7 +36,7 @@ public class NodeProperties {
 	public HashMap<DTNHost, ArrayList<Long>> toSearch = new HashMap<DTNHost, ArrayList<Long>>();
 	
 	public void addChunk(long chunk){
-		chunksReceived.add(chunk);
+		chunksReceived.put(SimClock.getTime(), chunk);
 	}
 	
 	public void setTimeBroadcastReceived(double timeBroadcastReceived){
@@ -109,7 +111,7 @@ public class NodeProperties {
 		return nrofTimesInterrupted;
 	}
 	
-	public ArrayList<Long> getChunksReceived(){
+	public HashMap<Double, Long> getChunksReceived(){
 		return chunksReceived;
 	}	
 

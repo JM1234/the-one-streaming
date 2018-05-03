@@ -100,7 +100,7 @@ public class WatcherAppV3 extends StreamingApplication{
 			String msg_type = (String) msg.getProperty("msg_type");
 			
 			if (msg_type.equals(BROADCAST_LIVE)){
-//				System.out.println(host +" Received a broadcast." + msg.getFrom());
+				System.out.println(host +" Received a broadcast." + msg.getFrom());
 //				String id = APP_TYPE+":register" + SimClock.getIntTime() + "-" +host.getAddress();
 				
 				if (!isWatching && watcherType==1){
@@ -194,16 +194,16 @@ public class WatcherAppV3 extends StreamingApplication{
 				if (props.getChunk(chunk.getChunkID())==null){ //if this is not a duplicate
 					props.addChunk(chunk);			
 					props.setAck(chunk.getChunkID());
+					sendEventToListeners(StreamAppReport.UPDATE_ACK, props.getAck(), host);
 					sendEventToListeners(StreamAppReport.RECEIVED_CHUNK, chunk.getChunkID(), host);
 					updateHello(host, chunk.getChunkID());
-					sendEventToListeners(StreamAppReport.UPDATE_ACK, props.getAck(), host);
-//					System.out.println(host + " updated:  " + props.getBuffermap());
+					System.out.println(host + " updated:  " + props.getBuffermap());
 				}
 				else{
 					sendEventToListeners(StreamAppReport.RECEIVED_DUPLICATE, chunk.getChunkID(), host);
 				}
 				
-//				System.out.println(host+ " received: "+chunk.getChunkID() + " for " + msg.getTo());
+				System.out.println(host+ " received: "+chunk.getChunkID() + " for " + msg.getTo());
 				chunkRequest.remove(chunk.getChunkID()); //remove granted requests
 
 				System.out.println("Ack Now: "+props.getAck()  +  " Received: "+chunk.getChunkID());
@@ -218,7 +218,7 @@ public class WatcherAppV3 extends StreamingApplication{
 				}
 			}
 			else if(msg_type.equalsIgnoreCase(BROADCAST_REQUEST)){
-//				System.out.println(host + " received request from " +msg.getFrom());
+				System.out.println(host + " received request from " +msg.getFrom());
 			
 				long chunkNeeded = (long) msg.getProperty("chunk");
 				
@@ -228,16 +228,18 @@ public class WatcherAppV3 extends StreamingApplication{
 				}
 			}
 			else if (msg_type.equals(INTERESTED)){
-//				System.out.println(host + " received INTERESTED from " + msg.getFrom());
+				System.out.println(host + " received INTERESTED from " + msg.getFrom());
 				//evaluate response if choke or unchoke
 				interestedNeighbors.put(msg.getFrom(), (int) msg.getCreationTime());
 //				System.out.println("Interested: " + interestedNeighbors);
 				evaluateResponse(host, msg.getFrom());
+				
+				System.out.println( host + "INTERESTED NODES: " +interestedNeighbors + " Unchoked: " + unchoked);
 			}
 			else if (msg_type.equals(UNCHOKE)){
-//				System.out.println(host + " received UNCHOKE from " + msg.getFrom());
-				
-				availableNeighbors.put(msg.getFrom(), (ArrayList<Long>) neighborData.get(msg.getFrom()).clone()); //add this to available neighbors
+				System.out.println(host + " received UNCHOKE from " + msg.getFrom());
+				ArrayList<Long> temp = (ArrayList<Long>) msg.getProperty("buffermap");
+				availableNeighbors.put(msg.getFrom(), (ArrayList<Long>) temp.clone());//(ArrayList<Long>) neighborData.get(msg.getFrom()).clone()); //add this to available neighbors
 				
 				/*
 				 * 
@@ -251,7 +253,7 @@ public class WatcherAppV3 extends StreamingApplication{
 				sendEventToListeners(StreamAppReport.UPDATE_AVAILABLE_NEIGHBORS, availableH, host);
 			}
 			else if (msg_type.equals(CHOKE)){
-//				System.out.println(host + " received CHOKE from " + msg.getFrom());
+				System.out.println(host + " received CHOKE from " + msg.getFrom());
 				//remove didi an neighbors na dati nag unchoke ha at. diri na hya api ha mga dapat aruan
 				availableNeighbors.remove(msg.getFrom());
 				ArrayList<DTNHost> availableH = new ArrayList<DTNHost>(availableNeighbors.keySet());
@@ -416,9 +418,9 @@ public class WatcherAppV3 extends StreamingApplication{
 		otherAvailable.removeAll(listOfRequested); //remove chunks that we already requested
 		Collections.sort(otherAvailable);
 		
-		System.out.println(host + " requesting from this list: " + otherAvailable);
-		System.out.println(host +  " ack: " + props.getAck());
-		System.out.println(host  + " THIS IS OLAAA: " + otherAvailable);
+//		System.out.println(host + " requesting from this list: " + otherAvailable);
+//		System.out.println(host +  " ack: " + props.getAck());
+//		System.out.println(host  + " THIS IS OLAAA: " + otherAvailable);
 		
 		int ctr=0;
 		for (long chunk: otherAvailable){
@@ -562,19 +564,38 @@ public class WatcherAppV3 extends StreamingApplication{
 	}
 
 	public void updateHello(DTNHost host, long newChunk){
+		int ctrNeighbors=0;
+		ArrayList<Long> latest = new ArrayList<Long>();
+		latest.add(newChunk);
+		
 //		long currAck=props.getAck();
 //		System.out.println(host + " RECEIVED NEW: " + newChunk);
-		for (DTNHost h : sentHello){
+//		for (DTNHost h : sentHello){
 //			long lastChunkSent = sentHello.get(h);
-			if (!h.equals(broadcasterAddress)){
-				ArrayList<Long> latest = new ArrayList<Long>();
-				latest.add(newChunk);
-				sendBuffermap(host, h, latest);
+//			if (!h.equals(broadcasterAddress)){
+//				sendBuffermap(host, h, latest);
 //				int firstIndex = stream.getBuffermap().indexOf(lastChunkSent)+1;
 //				int lastIndex = stream.getBuffermap().size();
 //				ArrayList<Long> latestUpdates = new ArrayList<Long> (stream.getBuffermap().subList(firstIndex, lastIndex));
 //				sentHello.put(h, stream.getChunk(lastIndex-1).getChunkID());
 //				System.out.println("Last hello sent: " + stream.getChunk(lastIndex-1).getChunkID());
+//			}
+//		}
+		
+		for (DTNHost h: unchoked){
+			if (h!=null){
+				sendBuffermap(host, h, latest);
+				ctrNeighbors++;
+			}
+		}
+		
+		
+		for (DTNHost h: sentHello){
+			if (!h.equals(broadcasterAddress) && !unchoked.contains(h)){
+				sendBuffermap(host, h, latest);
+				ctrNeighbors++;
+//				if (ctrNeighbors>=8)
+//					break;
 			}
 		}
 	}		
@@ -646,6 +667,7 @@ public class WatcherAppV3 extends StreamingApplication{
 		m.addProperty("type", APP_TYPE);
 		m.setAppID(APP_ID);
 		m.addProperty("msg_type", msgType);
+		m.addProperty("buffermap", props.getBuffermap());
 		m.addProperty(TVProphetRouterV2.MESSAGE_WEIGHT, 4);
 		host.createNewMessage(m);
 	}
@@ -676,11 +698,13 @@ public class WatcherAppV3 extends StreamingApplication{
 		if (recognized.isEmpty()) return;
 
 		Iterator<DTNHost> i = recognized.iterator();
+		
+		
  		for (int ctr=0; ctr<3; ctr++){ //send UNCHOKE to top 3
 			DTNHost other=null;
 			try{
 				other = i.next();	
-				if (!unchoked.contains(other) && other!=null){ //if diri hya api ha kanina na group of unchoked
+				if (!unchoked.contains(other)){ //if diri hya api ha kanina na group of unchoked
 					sendResponse(host, other, true); //send UNCHOKE
 					interestedNeighbors.remove(other); //for those new interested
 				}
@@ -703,9 +727,9 @@ public class WatcherAppV3 extends StreamingApplication{
 		Random r = new Random();
 		DTNHost prevRand;
 		recognized.removeAll(unchoked.subList(0, 3)); //remove pagpili random an ada na ha unchoked list
-//		System.out.println("Recognized now without all those at unchoked:" + recognized);
 		prevRand = unchoked.get(3);
-
+//		System.out.println("Recognized now without all those at unchoked:" + recognized);
+		
 		int index = r.nextInt(recognized.size()); //possible ini maging same han last random
 		DTNHost randNode = recognized.get(index);
 //		System.out.println("index chosen: " + index);
