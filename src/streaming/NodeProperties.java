@@ -1,6 +1,7 @@
 package streaming;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Set;
@@ -105,7 +106,18 @@ public class NodeProperties {
 	}
 
 	public int getNrofDuplicateRequest(){
-		return nrofDuplicateRequest;
+//		return nrofDuplicateRequest;
+		
+		Collections.sort(requested);
+		int ctr=0;
+		long prev=requested.get(0)-1;
+		for (long id: requested){
+			if (id == prev){
+				ctr++;
+				prev=id;
+			}
+		}
+		return ctr;
 	}
 
 	public int getNrofTimesInterrupted(){
@@ -148,8 +160,8 @@ public class NodeProperties {
 		return requested;
 	}
 
-	public void addRequested(long id){
-		requested.add(id);
+	public void addRequested(ArrayList<Long> id){
+		requested.addAll(id);
 	}
 	
 	public void setAck(long ack){

@@ -83,13 +83,13 @@ public class StreamAppReport extends Report implements ApplicationListener{
 			double time = (double) params;
 			nodeProps.setTimeFirstChunkReceived(time);
 		}
-		else if (event.equalsIgnoreCase(RESENT_REQUEST)){
-			int ctr = nodeProps.getNrofDuplicateRequest()+1;
-			nodeProps.setNrofDuplicateRequest(ctr);
-		}
+//		else if (event.equalsIgnoreCase(RESENT_REQUEST)){
+//			int ctr = nodeProps.getNrofDuplicateRequest()+1;
+//			nodeProps.setNrofDuplicateRequest(ctr);
+//		}
 		else if (event.equalsIgnoreCase(SENT_REQUEST)){
 			int ctr= nodeProps.getNrofTimesRequested()+1;
-			long id = (long) params;
+			ArrayList<Long> id = (ArrayList<Long>) params;
 			nodeProps.addRequested(id);
 			nodeProps.setNrofTimesRequested(ctr);
 		}

@@ -5,8 +5,8 @@
 ## Scenario settings
 Scenario.name = DTNStreaming
 Scenario.simulateConnections = true
-Scenario.updateInterval = 0.01
-Scenario.endTime = 101.8
+Scenario.updateInterval = 0.1
+Scenario.endTime = 5000
 Scenario.nrofHostGroups = 1
 
 ## Interface-specific settings:
@@ -74,7 +74,7 @@ Group.speed = 0.3, 0.3
 # seed for movement models' pseudo random number generator (default = 0)
 MovementModel.rngSeed = 1
 # World's size for Movement Models without implicit size (width, height; meters)
-MovementModel.worldSize = 500, 500
+MovementModel.worldSize = 400, 2900
 # How long time to move hosts in the world before real simulation
 
 ## Message creation parameters
@@ -105,4 +105,4 @@ Report.reportDir = reports/DTNStreaming
 Optimization.cellSizeMult = 20
 Optimization.randomizeUpdateOrder = true
 
-GUI.EventLogPanel.nrofEvents = 0
+GUI.EventLogPanel.nrofEvents = 100

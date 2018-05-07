@@ -1,21 +1,18 @@
 package applications;
 
-import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableMap;
 import java.util.Random;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+
+import javax.swing.text.html.HTMLDocument.Iterator;
 
 import core.Application;
 import core.Connection;
@@ -58,15 +55,14 @@ public abstract class StreamingApplication extends Application{
 	public static final int HELLO_UPDATE = 1;
 	public static final int SIMPLE_MSG_SIZE = 5;
 	public static final int BUFFERMAP_SIZE = 10;
-	public static final int HEADER_SIZE = 5;
-	public static final int MAX_REQUEST_PER_NODE = 5;
-	public static final int WAITING_THRESHOLD = 7; //based on paper
+	public static final int HEADER_SIZE = 56;
+	public static final int INDEX_TYPE = 1;
+	public static final int TRANS_TYPE = 2;
 	
 	private int		seed = 0;
 	private int		destMin=0;
 	private int	    destMax=1;
 	private String	streamID = "9999";
-	protected DTNHost host;
 	
 	private Random	rng;	
 	private TreeMap<Long, Integer> chunkCount;
@@ -152,6 +148,7 @@ public abstract class StreamingApplication extends Application{
 	public String getStreamID(){
 		return streamID;
 	}
+
 	@Override
 	public abstract Message handle(Message msg, DTNHost host);
 
@@ -159,16 +156,13 @@ public abstract class StreamingApplication extends Application{
 	public abstract void update(DTNHost host);
 	
 	protected abstract void sendChunk(StreamChunk chunk, DTNHost host, DTNHost to);
-	
 
 	protected Connection getCurrConnection(DTNHost h1, DTNHost h2){
-	
 		for(Connection c: h1.getConnections()){
 			if ((c.getOtherNode(h1)).equals(h2)){
 				return c;
 			}
 		}
-//		System.out.println("@ GETCURRCONNECTION");
 		return null;
 	}
 	
@@ -182,53 +176,29 @@ public abstract class StreamingApplication extends Application{
 		for (Connection c : host.getConnections()){
 			currConnected.add(c.getOtherNode(host));
 		}
-			
-//		Iterator<DTNHost> iterator = sentHello.iterator();
-//	    while (iterator.hasNext()) {
-//			DTNHost dtnHost = iterator.next();
-//			
-//			if (!currConnected.contains(dtnHost)){
-//				System.out.println(host + " REMOVED SENT HELLO TO " + dtnHost);
-//				removeBufferedMessages(host, dtnHost);
-//				interestedNeighbors.remove(dtnHost); //if it sent an interested message, remove it from the list of interested
-//				updateUnchoked(unchoked.indexOf(dtnHost), null); //if it is included among the current list of unchoked
-//				iterator.remove(); //removed from sentHello
-//			}
-//		}
-	    
-	    ArrayList<DTNHost> disconnectedN =  (ArrayList<DTNHost>) sentHello.clone();
-	    disconnectedN.removeAll(currConnected);
-	   
+
+		ArrayList<DTNHost> disconnectedN =  (ArrayList<DTNHost>) sentHello.clone();
+		disconnectedN.removeAll(currConnected);
+
 	    for(DTNHost dtnHost : disconnectedN){
-	    	System.out.println(host + " REMOVED SENT HELLO TO " + dtnHost);
 			removeBufferedMessages(host, dtnHost);
 			interestedNeighbors.remove(dtnHost); //if it sent an interested message, remove it from the list of interested
 			updateUnchoked(unchoked.indexOf(dtnHost), null); //if it is included among the current list of unchoked
 			sentHello.remove(sentHello.indexOf(dtnHost));
+			
 	    }
-	    
 	}
 	
 	/*
 	 * Remove buffered messages for the to host
 	 */
 	private void removeBufferedMessages(DTNHost host, DTNHost to){
-
 		List<Tuple<Message, Connection>> msgs = ((TVProphetRouterV2) host.getRouter()).getMessagesForConnected();
-		System.out.println("@removeBufferedMsgs" + msgs.size());
 		
 		for(Tuple<Message, Connection> m : msgs){
-			
 			if (m.getValue().getOtherNode(host).equals(to)){ //remove the messages in the buffer intended for the 'to' node
-				try{
-					Message stored = m.getKey();
-//					System.out.println("StoredMsg: "+stored);
-//					host.deleteMessage(stored.getId(), false); 
-					updateUnchoked(unchoked.indexOf(stored.getId()), null);
-					interestedNeighbors.remove(stored.getId());
-					System.out.println(stored + " deleted.");
-					
-				}catch(NullPointerException e){}
+				Message stored = m.getKey();
+				host.deleteMessage(stored.getId(), false);
 			}
 		}
 		return;
@@ -264,33 +234,27 @@ public abstract class StreamingApplication extends Application{
 	    sortedEntries.addAll(map.entrySet());
 	    return sortedEntries;
 	}
-	
-	public ArrayList<DTNHost> sortNeighborsByBandwidth(Set<DTNHost> hosts){
-		ArrayList<DTNHost> h = new ArrayList<>(hosts);
-		Collections.sort(h, Collections.reverseOrder(StreamingApplication.BandwidthComparator));
-		return h;
-	}
-	
+
 	public ArrayList<DTNHost> sortNeighborsByBandwidth(ArrayList<DTNHost> hosts){
 		ArrayList<DTNHost> h = new ArrayList<>(hosts);
-		Collections.sort(h, Collections.reverseOrder(StreamingApplication.BandwidthComparator));
+		Collections.sort(h, StreamingApplication.BandwidthComparator);
 		return h;
 	}
 
     public static Comparator<DTNHost> BandwidthComparator = new Comparator<DTNHost>() {
-    	public int compare(DTNHost h1, DTNHost h2) {
-    		
+    	public int compare(DTNHost h1, DTNHost h2) { //descending order
     		int speed1 = h1.getInterface(1).getTransmitSpeed(h1.getInterface(1));
     		int speed2 = h2.getInterface(1).getTransmitSpeed(h2.getInterface(1));
 	    	
-//    		ascending order
-    		return speed1-speed2;
+    		if (speed2>speed1){
+    			return 1;
+    		}
+    		else if (speed1>speed2){
+    			return -1;
+    		}
+    		return 0;
     	}
 	};
-
-//	private static void getHost(){
-//		return host;
-//	}
 	
     private static int getHostSpeed(DTNHost host){
     	return host.getInterface(0).getTransmitSpeed(host.getInterface(0));
@@ -306,7 +270,4 @@ public abstract class StreamingApplication extends Application{
     		unchoked.set(index, value); // if in unchoked, remove from list of unchoked
     	}catch(ArrayIndexOutOfBoundsException e){} 
     }
-
 }
-
-

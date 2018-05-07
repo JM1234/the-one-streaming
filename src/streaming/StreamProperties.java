@@ -37,7 +37,7 @@ public class StreamProperties {
 		while (receivedChunks.containsKey(ack+1)){
 			ack++;
 		}
-		System.out.println("Now Ack: "+ack);
+//		System.out.println("Now Ack: "+ack);
 	}
 	
 	public long getAck(){

@@ -1,13 +1,12 @@
 package fragmentation;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import core.SimClock;
 import streaming.StreamChunk;
 
 public class Fragment {
-
-	
 	private int id; //index id
 	private ArrayList<StreamChunk> bChunks;
 	private double timeCreated;
@@ -16,6 +15,8 @@ public class Fragment {
 	private int endPosition;
 	private int interrupted;
 	private int size; //in bytes
+	
+	private ArrayList<StreamChunk> subChunk;
 	
 	public Fragment(int id, ArrayList<StreamChunk> bChunks){
 		this.id = id;
@@ -35,6 +36,10 @@ public class Fragment {
 		return id;
 	}
 	
+	public long getFirstChunkID(){
+		return bChunks.get(0).getChunkID();
+	}
+	
 	public int startPosition(){
 		return startPosition;
 	}
@@ -43,8 +48,16 @@ public class Fragment {
 		this.startPosition = startPosition;
 	}
 	
-	public void endPosition(int endPosition){
+	public void setEndPosition(int endPosition){
 		this.endPosition = endPosition;
+	}
+	
+	public int getStartPosition(){
+		return startPosition;
+	}
+	
+	public int getEndPosition(){
+		return endPosition;
 	}
 	
 	public boolean isInterrupted(){
@@ -55,11 +68,26 @@ public class Fragment {
 		return bChunks.get(bChunks.size()-1).getChunkID();
 	}
 	
-	public int getSize(){
-		return size;
+	public double getSize(){
+//		return size;
+		return (StreamChunk.m480p * getNoOfChunks());
 	}
 	
 	public int getNoOfChunks(){
-		return SADFragmentation.NO_OF_CHUNKS_PER_FRAG;
+		return bChunks.size();
 	}
+	
+	public List<StreamChunk> setSubChunk(int startPosition, int endPosition){
+		return bChunks.subList(startPosition, endPosition);
+	}
+	
+	public int indexOf(long id){
+		for(int i=0; i<bChunks.size(); i++){
+			if (bChunks.get(i).getChunkID() == id){
+				return i;
+			}
+		}
+		return -1;
+	}
+	
 }
