@@ -33,7 +33,7 @@ public class SADFragmentation {
 	
 	public void createFragment( int id, ArrayList<StreamChunk> chunks){ //mainly used by watcher 
 		fragments.put(id, new Fragment(id, chunks));
-		System.out.println( " created new fragment " + id + " size: " + fragments.get(id).getFirstChunkID());
+		System.out.println( " created new fragment " + id + " firstchunkid: " + fragments.get(id).getFirstChunkID());
 	}
 	
 	public void setFragmentSize(int size){
@@ -49,7 +49,6 @@ public class SADFragmentation {
 	}
 	
 	public boolean doesExist(int id){
-		System.out.println(" Fragments created: " + fragments.keySet());
 		if(fragments.get(id) != null){
 			return true;
 		}

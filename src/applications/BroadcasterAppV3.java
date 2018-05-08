@@ -41,7 +41,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	private double lastChokeInterval = 0;
 	private double lastOptimalInterval =0;
 	private ArrayList<DTNHost> temp ;
-	
+
 	
 	public BroadcasterAppV3(Settings s) {
 		super(s);
@@ -86,18 +86,21 @@ public class BroadcasterAppV3 extends StreamingApplication{
 				
 					//System.out.println("otherStatus: "+otherStatus + " OtherAck: "+otherAck);
 					if (broadcasted && otherStatus==-1 && otherAck==-1){ //if otherNode is not listening to any stream yet
-						stream.setTo(msg.getFrom());
+						stream.setTo(msg.getFrom());					
 						Message m = stream.replicate();
+						m.setID(stream.getId() + "-" + msg.getFrom() + "-" + SimClock.getIntTime());						
 						((TVProphetRouterV2) host.getRouter()).addUrgentMessage(m, false);
 						if (stream.getBuffermap() != null){
 							sendBuffermap(host, msg.getFrom(), stream.getBuffermap());
-							sentHello.add(msg.getFrom());
+//							sentHello.add(msg.getFrom());
+							helloSent.put(msg.getFrom(), stream.getBuffermap());
 						}
 					}
 					
 					else if (!hasHelloed(msg.getFrom())) {
 						sendBuffermap(host, msg.getFrom(), stream.getBuffermap());
-						sentHello.add(msg.getFrom());
+//						sentHello.add(msg.getFrom());
+						helloSent.put(msg.getFrom(), stream.getBuffermap());
 					}
 				}
 				
@@ -224,7 +227,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	}
 	
 	public void sendBuffermap(DTNHost host, DTNHost to, Collection<Long> list){
-		String id = APP_TYPE+ ":hello_" + SimClock.getIntTime() +"-" + host.getAddress() +"-" + to;
+		String id = APP_TYPE+ ":hello_" + SimClock.getTime() +"-" + host.getAddress() +"-" + to;
 		
 		long ack =-1;
 		if(!stream.getBuffermap().isEmpty()){
@@ -248,7 +251,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	public void updateHello(DTNHost host){
 		System.out.println(" sending updated hello");
 		long currAck=-1;
-		int ctrNeighbors=0;
+//		int ctrNeighbors=0;
 		
 		if (stream.getLatestChunk()!=null){
 			currAck = stream.getLatestChunk().getChunkID();
@@ -260,14 +263,17 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		for (DTNHost h: unchoked){
 			if (h!=null){
 				sendBuffermap(host, h, latest);
-				ctrNeighbors++;
+//				ctrNeighbors++;
+				helloSent.get(h).addAll(latest);
 			}
 		}
 		
-		for (DTNHost h: sentHello){
+//		for (DTNHost h: sentHello){
+		for (DTNHost h: helloSent.keySet()){
 			if (!unchoked.contains(h)){
 				sendBuffermap(host, h, latest);
-				ctrNeighbors++;
+				helloSent.get(h).addAll(latest);
+//				ctrNeighbors++;
 			}
 		}
 	}	
@@ -338,7 +344,6 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	
 	@Override
 	protected void sendChunk(StreamChunk chunk, DTNHost host, DTNHost to) {
-		System.out.println(host + " sending chunk " + chunk.getChunkID() + " to " + to);
 		String id = APP_TYPE + ":chunk_" + chunk.getChunkID() +  " " + chunk.getCreationTime() +"-" +to + "-" + host.getAddress();
 		
 		Message m = new Message(host, to, id, (int) chunk.getSize());		
@@ -432,11 +437,14 @@ public class BroadcasterAppV3 extends StreamingApplication{
 //			System.out.println(host + " sending choke to " + to);
 		}
 
+		ArrayList<Long> unsentUpdate = (ArrayList<Long>) stream.getBuffermap().clone();
+		unsentUpdate.removeAll(helloSent.get(to));
+		
 		Message m = new Message(host, to, id, SIMPLE_MSG_SIZE);		
 		m.addProperty("type", APP_TYPE);
 		m.setAppID(APP_ID);
 		m.addProperty("msg_type", msgType);
-		m.addProperty("buffermap", stream.getBuffermap());
+		m.addProperty("buffermap", unsentUpdate);
 		m.addProperty(TVProphetRouterV2.MESSAGE_WEIGHT, 4);
 		host.createNewMessage(m);
 	}
@@ -498,7 +506,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 			DTNHost other=null;
 			try{
 				other = i.next();	
-				if (!unchoked.contains(other)){ //if diri hya api ha kanina na group of unchoked
+				if (!unchoked.contains(other) ){ //if diri hya api ha kanina na group of unchoked
 					sendResponse(host, other, true); //send UNCHOKE
 					interestedNeighbors.remove(other); //for those new interested
 				}
@@ -525,7 +533,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		DTNHost randNode = recognized.get(index);
 
 		if (prevRand!=randNode){
-			sendResponse(host, prevRand, false); //send CHOKE to this random node if it is not the same with new node
+			if (prevRand!=null)  sendResponse(host, prevRand, false); //send CHOKE to this random node if it is not the same with new node
 			recognized.remove(prevRand);
 			if (!prevUnchoked.contains(randNode)){
 				sendResponse(host, randNode, true); //sendUnchoke to this random node

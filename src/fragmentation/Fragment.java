@@ -37,7 +37,6 @@ public class Fragment {
 	}
 	
 	public long getFirstChunkID(){
-		System.out.println(" Get first chunk: " + bChunks.size());
 		return bChunks.get(0).getChunkID();
 	}
 	
@@ -87,15 +86,16 @@ public class Fragment {
 			endPosition = pos;
 		}
 		
-		isIndexComplete();
+		setIndexComplete();
 	}
 	
-	private void isIndexComplete(){
+	private void setIndexComplete(){
 		for (StreamChunk c: bChunks){
 			if (c==null){
 				return;
 			}
 		}
+		System.out.println(" created fragment: " + id);
 		isComplete = true;
 	}
 	

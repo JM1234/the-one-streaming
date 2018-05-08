@@ -66,9 +66,10 @@ public abstract class StreamingApplication extends Application{
 	
 	private Random	rng;	
 	private TreeMap<Long, Integer> chunkCount;
-	protected ArrayList<DTNHost> sentHello; //store all chunkids sent on this node
+//	protected ArrayList<DTNHost> sentHello; //store all chunkids sent on this node
 	protected HashMap<DTNHost, Integer> interestedNeighbors; //nodes that can request from us
 	protected ArrayList<DTNHost> unchoked;
+	protected HashMap<DTNHost, ArrayList<Long>> helloSent;
 	
 	public StreamingApplication(Settings s){
 		
@@ -86,7 +87,8 @@ public abstract class StreamingApplication extends Application{
 		if(s.contains(STREAM_ID)){
 			this.streamID = s.getSetting(STREAM_ID);			
 		}
-		this.sentHello = new ArrayList<DTNHost>();
+//		this.sentHello = new ArrayList<DTNHost>();
+		this.helloSent = new HashMap<DTNHost, ArrayList<Long>>();
 		chunkCount = new TreeMap<Long, Integer>();
 		interestedNeighbors = new HashMap<DTNHost, Integer>();
 		unchoked = new ArrayList<DTNHost>(4);
@@ -104,7 +106,8 @@ public abstract class StreamingApplication extends Application{
 //		this.streamSize = a.getStreamSize();
 		this.streamID = a.getStreamID();
 		this.rng = new Random(this.seed);
-		this.sentHello = new ArrayList<DTNHost>();
+//		this.sentHello = new ArrayList<DTNHost>();
+		this.helloSent = new HashMap<DTNHost, ArrayList<Long>>();
 		interestedNeighbors = new HashMap<DTNHost, Integer>();
 		chunkCount = new TreeMap<Long, Integer>();
 		unchoked = new ArrayList<DTNHost>(4);
@@ -177,15 +180,16 @@ public abstract class StreamingApplication extends Application{
 			currConnected.add(c.getOtherNode(host));
 		}
 
-		ArrayList<DTNHost> disconnectedN =  (ArrayList<DTNHost>) sentHello.clone();
+//		ArrayList<DTNHost> disconnectedN =  (ArrayList<DTNHost>) sentHello.clone();
+		ArrayList<DTNHost> disconnectedN = new ArrayList<DTNHost>(helloSent.keySet());
 		disconnectedN.removeAll(currConnected);
 
 	    for(DTNHost dtnHost : disconnectedN){
 			removeBufferedMessages(host, dtnHost);
 			interestedNeighbors.remove(dtnHost); //if it sent an interested message, remove it from the list of interested
 			updateUnchoked(unchoked.indexOf(dtnHost), null); //if it is included among the current list of unchoked
-			sentHello.remove(sentHello.indexOf(dtnHost));
-			
+//			sentHello.remove(sentHello.indexOf(dtnHost));
+			helloSent.remove(dtnHost);
 	    }
 	}
 	
@@ -205,7 +209,8 @@ public abstract class StreamingApplication extends Application{
 	}
 	
 	public boolean hasHelloed(DTNHost host){
-		return sentHello.contains(host);
+//		return sentHello.contains(host);
+		return helloSent.keySet().contains(host);
 	}
 
 	protected void updateChunkCount(ArrayList<Long> buffermap){

@@ -367,5 +367,8 @@ public class Message implements Comparable<Message> {
 	public void setTo(DTNHost to){
 		this.to=to;
 	}
-
+	
+	public void setID(String id){
+		this.id = id;
+	}
 }
