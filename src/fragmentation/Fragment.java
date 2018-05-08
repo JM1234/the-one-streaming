@@ -3,6 +3,8 @@ package fragmentation;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.swing.plaf.synth.SynthScrollBarUI;
+
 import core.SimClock;
 import streaming.StreamChunk;
 
@@ -11,12 +13,10 @@ public class Fragment {
 	private ArrayList<StreamChunk> bChunks;
 	private double timeCreated;
 	private String sourceId;
-	private int startPosition; //starting chunk id of the fragment
-	private int endPosition;
-	private int interrupted;
+	private int startPosition=-1; //starting chunk id of the fragment
+	private int endPosition=-1;
 	private int size; //in bytes
-	
-	private ArrayList<StreamChunk> subChunk;
+	private boolean isComplete = false;
 	
 	public Fragment(int id, ArrayList<StreamChunk> bChunks){
 		this.id = id;
@@ -37,6 +37,7 @@ public class Fragment {
 	}
 	
 	public long getFirstChunkID(){
+		System.out.println(" Get first chunk: " + bChunks.size());
 		return bChunks.get(0).getChunkID();
 	}
 	
@@ -60,8 +61,8 @@ public class Fragment {
 		return endPosition;
 	}
 	
-	public boolean isInterrupted(){
-		return (interrupted == 1? true: false);
+	public boolean isComplete(){
+		return isComplete;
 	}
 	
 	public long getEndChunk(){
@@ -69,7 +70,6 @@ public class Fragment {
 	}
 	
 	public double getSize(){
-//		return size;
 		return (StreamChunk.m480p * getNoOfChunks());
 	}
 	
@@ -77,8 +77,26 @@ public class Fragment {
 		return bChunks.size();
 	}
 	
-	public List<StreamChunk> setSubChunk(int startPosition, int endPosition){
-		return bChunks.subList(startPosition, endPosition);
+	public void updateBundle(int pos, StreamChunk c){ //mainly used by watcher. adding transmission level frags
+		bChunks.set(pos, c);
+		
+		if (pos < startPosition || startPosition==-1){
+			startPosition = pos;
+		}
+		else if (pos>endPosition || endPosition==-1){
+			endPosition = pos;
+		}
+		
+		isIndexComplete();
+	}
+	
+	private void isIndexComplete(){
+		for (StreamChunk c: bChunks){
+			if (c==null){
+				return;
+			}
+		}
+		isComplete = true;
 	}
 	
 	public int indexOf(long id){
@@ -87,6 +105,7 @@ public class Fragment {
 				return i;
 			}
 		}
+		System.out.println(id + " chunk does not exist.");
 		return -1;
 	}
 	

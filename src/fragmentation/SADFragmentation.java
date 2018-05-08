@@ -26,9 +26,14 @@ public class SADFragmentation {
 		fragments = new HashMap<Integer, Fragment>();
 	}
 	
-	public void createFragment(ArrayList<StreamChunk> chunks) {
+	public void createFragment(ArrayList<StreamChunk> chunks) { //mainly used by broadcaster
 		System.out.println("CREATED FRAGMENT "+ id + " with last chunk: " + chunks.get(chunks.size()-1).getChunkID());
 		fragments.put(id, new Fragment(id++, chunks));
+	}
+	
+	public void createFragment( int id, ArrayList<StreamChunk> chunks){ //mainly used by watcher 
+		fragments.put(id, new Fragment(id, chunks));
+		System.out.println( " created new fragment " + id + " size: " + fragments.get(id).getFirstChunkID());
 	}
 	
 	public void setFragmentSize(int size){
@@ -44,6 +49,7 @@ public class SADFragmentation {
 	}
 	
 	public boolean doesExist(int id){
+		System.out.println(" Fragments created: " + fragments.keySet());
 		if(fragments.get(id) != null){
 			return true;
 		}
@@ -65,5 +71,17 @@ public class SADFragmentation {
 	
 	public int getCurrIndex(){
 		return fragments.size();
+	}
+
+	public void initTransLevelFrag(int id){
+		ArrayList<StreamChunk> temp = new ArrayList<StreamChunk>(NO_OF_CHUNKS_PER_FRAG);
+		for (int i=0; i<NO_OF_CHUNKS_PER_FRAG; i++){
+			temp.add(null);
+		}
+		fragments.put(id, new Fragment(id, temp));
+	}
+	
+	public void addChunkToFragment(int id, int pos, StreamChunk c){ //used by watcher. for adding transmission level chunks
+		fragments.get(id).updateBundle(pos, c);
 	}
 }

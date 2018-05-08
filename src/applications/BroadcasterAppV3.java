@@ -246,6 +246,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	}
 	
 	public void updateHello(DTNHost host){
+		System.out.println(" sending updated hello");
 		long currAck=-1;
 		int ctrNeighbors=0;
 		
@@ -307,7 +308,6 @@ public class BroadcasterAppV3 extends StreamingApplication{
 						if(currFrag == stream.getChunk(currChunk).getFragmentIndex() && (bundled.isEmpty() || currChunk==prevChunk+1)){
 							bundled.add(currChunk);
 							prevChunk = currChunk;
-//							request.remove(currChunk);
 							iter.remove();
 						}
 						else{
@@ -320,8 +320,11 @@ public class BroadcasterAppV3 extends StreamingApplication{
 					int end =  fragment.getFragment(currFrag).indexOf(bundled.get(bundled.size()-1));
 					
 					System.out.println("CurrFrag: " + currFrag + " start: "+ start+ " end: " + end);
-					if (!bundled.isEmpty()){ //nasend fragment bisan usa la it sulod
+					if (!bundled.isEmpty() && bundled.size()>1){ //nasend fragment bisan usa la it sulod
 						sendFragment(host, msg.getFrom(), SADFragmentation.TRANS_LEVEL, currFrag, start, end);
+					}
+					else if (bundled.size()<2){ //limit trans level == 2 chunks fragmented
+						sendChunk(stream.getChunk(bundled.get(0)), host, msg.getFrom());
 					}
 				}
 			}
