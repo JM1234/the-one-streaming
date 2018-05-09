@@ -69,8 +69,12 @@ public class Fragment {
 	}
 	
 	public double getSize(){
-		return (StreamChunk.m480p * getNoOfChunks());
+		return (StreamChunk.getByterate()* getNoOfChunks());
 	}
+	
+//	public double getSize(int quantity){
+//		return (StreamChunk.m480p * quantity);
+//	}
 	
 	public int getNoOfChunks(){
 		return bChunks.size();
@@ -78,7 +82,7 @@ public class Fragment {
 	
 	public void updateBundle(int pos, StreamChunk c){ //mainly used by watcher. adding transmission level frags
 		bChunks.set(pos, c);
-		
+		System.out.println( "trans updated: " + pos +":"+c.getChunkID());
 		if (pos < startPosition || startPosition==-1){
 			startPosition = pos;
 		}
@@ -86,16 +90,20 @@ public class Fragment {
 			endPosition = pos;
 		}
 		
-		setIndexComplete();
+		checkIfIndexComplete();
 	}
 	
-	private void setIndexComplete(){
+	private void checkIfIndexComplete(){
 		for (StreamChunk c: bChunks){
 			if (c==null){
 				return;
 			}
 		}
 		System.out.println(" created fragment: " + id);
+		isComplete = true;
+	}
+	
+	public void setIndexComplete(){
 		isComplete = true;
 	}
 	

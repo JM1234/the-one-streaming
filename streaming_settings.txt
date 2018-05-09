@@ -26,7 +26,7 @@ Group.movementModel = RandomWaypoint
 Group.router = TVProphetRouterV2
 TVProphetRouter.secondsInTimeUnit=1
 Group.bufferSize = 5000M
-Group.speed = 0.5, 1.5
+Group.speed = 8, 11
 Group.sendQueue = FIFO
 Group.nrofInterfaces = 1
 Group.interface1 = wifiDirectInterface
@@ -38,7 +38,7 @@ Group1.application1 = streamApp1
 Group1.nodeLocation = 100,300
 
 Group2.groupID=w
-Group2.nrofHosts=1
+Group2.nrofHosts=10
 Group2.nodeLocation=130,305
 Group2.application1=streamApp2
 
@@ -49,10 +49,10 @@ Group2.application1=streamApp2
 
 # Add report for Stream app
 Report.nrofReports = 2
-Report.report1 = RequestListReport
+#Report.report1 = RequestListReport
 #Report.report1 = EventLogReport
 Report.report2 = StreamAppReport
 #Report.report3 = MessageDelayReport
 #Report.report4 = MessageReport
-#Report.report5 = MessageStatsReport
+Report.report1 = MessageStatsReport
 #Report.report4 = TotalContactTimeReport

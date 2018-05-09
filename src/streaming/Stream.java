@@ -14,7 +14,7 @@ import core.Message;
  * @author janz
  *
  */
-public class Stream extends Message {
+public class Stream {
 	
 	
 	private static int chunkNo=0000;
@@ -31,13 +31,11 @@ public class Stream extends Message {
 	protected DTNHost to;
 	protected String id;
 	private double timeLastStream;	
-
+	private String streamID;
+	
 	//variable for limitTime. randomize variable on how long the live stream is gonna last
-	public Stream(DTNHost from, DTNHost to, String id, int size) {
-		super(from, to, id, size);
-		this.from = from;
-		this.to = to;
-		this.id = id;
+	public Stream(String streamID) {
+		this.streamID = streamID;
 
 		Stream.stream_interval = StreamChunk.getDuration();
 		streamSet= new LinkedHashMap<Long,StreamChunk>() ;

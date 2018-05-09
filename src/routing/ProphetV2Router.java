@@ -124,9 +124,6 @@ public class ProphetV2Router extends ActiveRouter {
 			updateTransitivePreds(otherHost);
 			System.out.println("@original router");
 		}
-		else{
-			System.out.println("Down at original router;");
-		}
 	}
 
 	/**

@@ -28,7 +28,7 @@ public class NodeProperties {
 	private LinkedHashMap<Double,ArrayList<DTNHost>> availableH = new LinkedHashMap<Double,ArrayList<DTNHost>>();
 	private ArrayList<Long> requested = new ArrayList<Long>();
 	private long ack;
-	
+	private int sizeAdjustedCount=0;
 	
 	private ArrayList<Long> couldHaveRequested = new ArrayList<Long>();
 	
@@ -180,5 +180,12 @@ public class NodeProperties {
 		return couldHaveRequested;
 	}
 	
+	public void setSizeAdjustedCount(int sizeAdjustedCount){
+		this.sizeAdjustedCount = sizeAdjustedCount;
+	}
+	
+	public int getSizeAdjustedCount(){
+		return sizeAdjustedCount;
+	}
 	
 }

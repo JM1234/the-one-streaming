@@ -127,10 +127,7 @@ public abstract class StreamingApplication extends Application{
 	private int getIndexSize(TVProphetRouter router, DTNHost otherHost){
 		return (int) router.getIndexSize();
 	}
-	
-	private int getTransSize(TVProphetRouter router, DTNHost otherHost){
-		return (int) router.getTransSize(otherHost);	
-	}
+
 
 //	public int getStreamSize() {
 //		return streamSize;
@@ -241,6 +238,12 @@ public abstract class StreamingApplication extends Application{
 	}
 
 	public ArrayList<DTNHost> sortNeighborsByBandwidth(ArrayList<DTNHost> hosts){
+		ArrayList<DTNHost> h = new ArrayList<>(hosts);
+		Collections.sort(h, StreamingApplication.BandwidthComparator);
+		return h;
+	}
+	
+	public ArrayList<DTNHost> sortNeighborsByBandwidth(List<DTNHost> hosts){
 		ArrayList<DTNHost> h = new ArrayList<>(hosts);
 		Collections.sort(h, StreamingApplication.BandwidthComparator);
 		return h;

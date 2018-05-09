@@ -80,8 +80,8 @@ public class TVProphetRouterV2 extends ActiveRouter {
 	private static double indexSize;
 	private static double transferRate = 100; //KBps. bluetooth
 	private static double connectionDuration = 60; //seconds. distribution of connection duration
-	private static double startTime;
-	private static double endTime;
+	private double endTime;
+	private HashMap<DTNHost, Double> timeRecord; 
 	
 	private double transSize; 
 	
@@ -101,7 +101,7 @@ public class TVProphetRouterV2 extends ActiveRouter {
 		initTava();
 		initVava();
 		initTransmissionPreds();
-
+		timeRecord = new HashMap<DTNHost, Double>();
 	}
 	
 	/**
@@ -117,6 +117,7 @@ public class TVProphetRouterV2 extends ActiveRouter {
 		initTava();
 		initVava();
 		initTransmissionPreds();
+		timeRecord = new HashMap<DTNHost, Double>();
 	}
 	
 	/*
@@ -132,20 +133,70 @@ public class TVProphetRouterV2 extends ActiveRouter {
 //			updateTransitivePreds(otherHost);
 			
 			//add transitive sizes per host here
-			
-			startTime = SimClock.getTime();
-//			updateTransmissionPreds(otherHost);
+			timeRecord.put(otherHost, SimClock.getTime());
+			updateTransmissionPreds(otherHost);
 		}		
+		
 		else{
 			DTNHost otherHost = con.getOtherNode(getHost()); //this host is same with the host in up()
 			
 			endTime = SimClock.getTime();
-		
-			double duration = endTime-startTime;
-//			updateTava(otherHost, duration);
-//			updateVava(otherHost, con.getSpeed());
+			
+			double duration = endTime-timeRecord.get(otherHost);
+			System.out.println(" duration: " +round(duration) + " connection speed: " + (con.getSpeed()/1000) ); //+ "rounded speed: " + round(con.getSpeed()));
+			
+			updateTava(otherHost, round(duration));
+			updateVava(otherHost, con.getSpeed()/1000);
+			timeRecord.remove(otherHost);
 		}
 		
+	}
+	
+	private void updateTava(DTNHost host, double tCurrent){
+//		System.out.println("Updating tava");
+		double tOld;
+		try{
+			tOld= tava.get(host); 
+		}catch(NullPointerException e){
+			tOld = T_OLD;
+		}
+		
+		double t = round(tOld*TV_ALPHA*TV_GAMMA + tCurrent*(1-TV_ALPHA*TV_GAMMA));	
+		System.out.println(host + " update tava: " + t);
+		tava.put(host, t);
+	}
+	
+	private void updateVava(DTNHost host, double vCurrent){
+		double vOld;
+//		System.out.println("Updating tava");
+		try{
+			vOld = vava.get(host);
+		}catch(NullPointerException e){
+			vOld = V_OLD;
+		}
+		
+		double v = round(vOld*TV_ALPHA*TV_GAMMA + vCurrent*(1-TV_ALPHA*TV_GAMMA));
+		System.out.println(host + " update vava: " + v);
+		vava.put(host, v);
+	}
+	
+	private double getTransSize(DTNHost host){
+		try{
+			transSize = round( (tava.get(host) * vava.get(host) * 0.4)/1000 ) ;
+			System.out.println(host + " tava: " + tava.get(host) + " vava: " + vava.get(host) + " calculated: " + transSize);
+		}catch(NullPointerException e){
+			transSize = T_OLD * V_OLD * 0.4;
+		}
+		return transSize;
+	}
+	
+	/** updates transmission predictions */
+	private void updateTransmissionPreds(DTNHost host){
+		transmissionPreds.put(host,  getTransSize(host));
+	}
+	
+	public double getTransmissionPreds(DTNHost host){
+		return transmissionPreds.get(host);
 	}
 	
 	public Message getFirstMessageOnBuffer(){
@@ -169,14 +220,14 @@ public class TVProphetRouterV2 extends ActiveRouter {
 		//get first message han iya buffer, get first message han ak buffer
 		//if the creationTime of otherNode's first message on the buffer is less than mine,
 		//call exchangeUrgentMessages
-//		if (exchangeUrgentMessages() !=null){
-//			return;
-//		}
+		if (exchangeUrgentMessages() !=null){
+			return;
+		}
 		
 //		// try messages that could be delivered to final recipient
-		if (exchangeDeliverableMessages() != null) { ////bago ini, check anay kun hino it dapat mauna pag send between two connections
-			return;	
-		}
+//		if (exchangeDeliverableMessages() != null) { ////bago ini, check anay kun hino it dapat mauna pag send between two connections
+//			return;	
+//		}
 //		
 //		tryOtherMessages();	
 	} 
@@ -184,7 +235,6 @@ public class TVProphetRouterV2 extends ActiveRouter {
 	public boolean shouldSendFirst(Connection c){
 		DTNHost other = c.getOtherNode(getHost());
 		Message m1 = getFirstMessageOnBuffer();
-//		System.out.println("OTHERS");
 		Message m2 = ((TVProphetRouterV2) other.getRouter()).getFirstMessageOnBuffer();
 		
 		if (m2==null){ //otherNode has no message to send
@@ -194,11 +244,6 @@ public class TVProphetRouterV2 extends ActiveRouter {
 			return false;
 		}
 
-//		System.out.println("CHECKING @ shouldsendfirst");
-//		System.out.println("Message of " + getHost() + " : " + m1 + " timecreated: "+m1.getCreationTime());
-//		System.out.println("Message of " + c.getOtherNode(getHost()) + " : " + m2 + " timecreated: "+m2.getCreationTime());
-	
-//		System.out.println("HELOOOOOOOOOOOOOOOO " +m1);
 		int weight1 = (int) m1.getProperty(MESSAGE_WEIGHT);
 		int weight2 = (int) m2.getProperty(MESSAGE_WEIGHT);
 		if (weight1<=weight2){ //evaluate whose message is more urgent (with respect to time) m1.getCreationTime() <= m2.getCreationTime() || 
@@ -218,20 +263,16 @@ public class TVProphetRouterV2 extends ActiveRouter {
 		}
 		Tuple<Message, Connection> t = null;
 		List<Tuple<Message, Connection>> buffer = sortByWeight(getMessagesForConnected());
-//		System.out.println("buffer messages: " + buffer);
+
 		if (!buffer.isEmpty()){
 			for (Connection c : connections){
 //				if (shouldSendFirst(c)){
-					
-//					System.out.println("SHOULD SEND FIRST "  + getHost());
 					t = tryMessagesForConnected(buffer);
-//					System.out.println("SPEED OF THIS TRANFER: " + c.getSpeed() );
 //				}
 			}
 		}
 		
 		if (t!=null){
-//			System.out.println(getHost() + " t not null.");
 			return t.getValue();
 		}
 
@@ -523,5 +564,9 @@ public class TVProphetRouterV2 extends ActiveRouter {
 		if(getMessage(con.getMessage().getId()) !=null ){
 			this.deleteMessage(con.getMessage().getId(), false);
 		}
+	}
+	
+	public double round(double value) {
+		return (double)Math.round(value * 100)/100;
 	}
 }

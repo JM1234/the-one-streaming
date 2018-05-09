@@ -17,7 +17,7 @@ public class StreamChunk{
 	private static int duration=1;  //seconds per chunk
 	
 	//specific video properties
-	private double byterate = m480p; //in bytes per second
+	private static double byterate = m1080p; //in bytes per second
 	private int framerate;
 	
 	private String fileID;
@@ -72,7 +72,7 @@ public class StreamChunk{
 		this.byterate=byterate;
 	}
 	
-	public double getByterate(){
+	public static double getByterate(){
 		return byterate;
 	}
 	

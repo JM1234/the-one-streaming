@@ -9,15 +9,14 @@ import streaming.StreamChunk;
 public class SADFragmentation {
 	
 	// equated to per chunk size and index level size
-	public static final int NO_OF_CHUNKS_PER_FRAG = 200;
+	public static final int NO_OF_CHUNKS_PER_FRAG = 500;
 	public static final int INDEX_LEVEL=1;
 	public static final int TRANS_LEVEL=2;
-	
+
 	/*
 	 * bluetooth: 3200 kBps = 25Mbps
 	 * wifidirect: 32000 kBps = 250Mbps
 	 */
-	private static int INDEX_SIZE =  3200 * 20; //kBps*seconds //must get this from setting	
 	private static int id=0;
 
 	private HashMap<Integer, Fragment> fragments;
@@ -36,13 +35,9 @@ public class SADFragmentation {
 		System.out.println( " created new fragment " + id + " firstchunkid: " + fragments.get(id).getFirstChunkID());
 	}
 	
-	public void setFragmentSize(int size){
-		SADFragmentation.INDEX_SIZE = size;
-	}
-	
-	public int getFragSize(){
-		return SADFragmentation.INDEX_SIZE;
-	}
+//	public int getFragSize(int id){
+//		return fragments.get(id).gets;
+//	}
 	
 	public Fragment getFragment(int id){
 		return fragments.get(id);
@@ -82,5 +77,9 @@ public class SADFragmentation {
 	
 	public void addChunkToFragment(int id, int pos, StreamChunk c){ //used by watcher. for adding transmission level chunks
 		fragments.get(id).updateBundle(pos, c);
+	}
+	
+	public void getBitrate(){
+		
 	}
 }

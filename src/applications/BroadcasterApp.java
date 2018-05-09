@@ -101,9 +101,9 @@ public class BroadcasterApp extends StreamingApplication {
 				ArrayList<Long> chunks = ((ArrayList<Long>) msg.getProperty("buffermap"));
 			
 				if (broadcasted && otherStatus==-1 && otherAck==-1){
-					stream.setTo(msg.getFrom());
-					Message m = stream.replicate();
-					((TVProphetRouter) host.getRouter()).addUrgentMessage(m, false);
+//					stream.setTo(msg.getFrom());
+//					Message m = stream.replicate();
+//					((TVProphetRouter) host.getRouter()).addUrgentMessage(m, false);
 				}
 				else{
 					ArrayList<StreamChunk> missingC;
@@ -210,10 +210,10 @@ public class BroadcasterApp extends StreamingApplication {
 						if (curr.isUp() && sentBroadcast.get(i)!=1){
 //								( !curr.getOtherNode(host).getRouter().hasMessage(stream.getId()))){//&& con.isInitiator(host)) { /////////dzae ha router diri permanent it message. daapt check ha application
 							//handle node
-							stream.setTo(curr.getOtherNode(host));
-							Message m = stream.replicate();
-							((TVProphetRouter) host.getRouter()).addUrgentMessage(m, false);
-							System.out.println("BROADCAST sent." + stream.getTo());
+//							stream.setTo(curr.getOtherNode(host));
+//							Message m = stream.replicate();
+//							((TVProphetRouter) host.getRouter()).addUrgentMessage(m, false);
+//							System.out.println("BROADCAST sent." + stream.getTo());
 							sentBroadcast.add(i, 1);
 						}
 						else{
@@ -231,17 +231,17 @@ public class BroadcasterApp extends StreamingApplication {
 	}
 
 	private void startBroadcast(DTNHost host){
-		stream= new Stream(host, randomHost(), APP_TYPE + ":broadcast" + 
-				SimClock.getIntTime() + "-" + host.getAddress(),
-				SIMPLE_MSG_SIZE);
-		stream.addProperty("type", APP_TYPE);
-		stream.addProperty("msg_type", BROADCAST_LIVE);
-		stream.addProperty("streamID", getStreamID());
-		stream.setAppID(APP_ID);
-		stream.startLiveStream();
-		host.createNewMessage(stream); //must override, meaning start a broadcast that a stream is initiated from this peer
-		//////set response size
-		super.sendEventToListeners(BROADCAST_LIVE, null, host);
+//		stream= new Stream(host, randomHost(), APP_TYPE + ":broadcast" + 
+//				SimClock.getIntTime() + "-" + host.getAddress(),
+//				SIMPLE_MSG_SIZE);
+//		stream.addProperty("type", APP_TYPE);
+//		stream.addProperty("msg_type", BROADCAST_LIVE);
+//		stream.addProperty("streamID", getStreamID());
+//		stream.setAppID(APP_ID);
+//		stream.startLiveStream();
+//		host.createNewMessage(stream); //must override, meaning start a broadcast that a stream is initiated from this peer
+//		//////set response size
+//		super.sendEventToListeners(BROADCAST_LIVE, null, host);
 
 	}
 	
@@ -269,7 +269,7 @@ public class BroadcasterApp extends StreamingApplication {
 		}
 		
 		//sort fragments
-		fragment.setFragmentSize(fSize);
+//		fragment.setFragmentSize(fSize);
 		fragment.createFragment(bundle);
 		stream.resetAccumChunkSize();
 	}
@@ -278,7 +278,7 @@ public class BroadcasterApp extends StreamingApplication {
 		Fragment f = fragment.getFragment(fID);
 		String mID = APP_TYPE + ":fragment " + f.getTimeCreated() + "-" +host.getAddress();
 		
-		Message m = new Message(host, to, mID, fragment.getFragSize());
+		Message m = new Message(host, to, mID, 5);
 		m.addProperty("type", APP_TYPE);
 		m.setAppID(APP_ID);
 //		m.addProperty("msg_type", FRAGMENT_SENT);

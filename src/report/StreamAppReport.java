@@ -34,6 +34,7 @@ public class StreamAppReport extends Report implements ApplicationListener{
 	public static final String CHUNK_CREATED = "chunkCreated";
 	public static final String UPDATE_AVAILABLE_NEIGHBORS = "updateAvailableNeighbor";
 	public static final String UPDATE_ACK = "updateAck";
+	public static final String SIZE_ADJUSTED = "sizeAdjusted";
 	
 	private HashMap<DTNHost, NodeProperties> nodeRecord = new HashMap<DTNHost, NodeProperties>();
 	private int createdChunks=0;
@@ -109,9 +110,8 @@ public class StreamAppReport extends Report implements ApplicationListener{
 			long ack = (long) params;
 			nodeProps.setAck(ack);
 		}
-		else if (event.equalsIgnoreCase("THIS WILL WORK T_T.")){
-			ArrayList<Long> couldHaveRequested = (ArrayList<Long>) params;
-			nodeProps.addCouldHaveRequested(couldHaveRequested);
+		else if (event.equalsIgnoreCase(SIZE_ADJUSTED)){
+			nodeProps.setSizeAdjustedCount(nodeProps.getSizeAdjustedCount()+1);
 		}
 		nodeRecord.put(host, nodeProps);
 	}
@@ -138,7 +138,8 @@ public class StreamAppReport extends Report implements ApplicationListener{
 				 + "time_first_requested: " + nodeRecord.get(h).getTimeFirstRequested() + eol
 				 + "time_first_chunk_received: " + nodeRecord.get(h).getTimeFirstChunkReceived() + eol
 				 + "number_of_times_requested: " + nodeRecord.get(h).getNrofTimesRequested() + eol
-				 + "number_of_chunks_requested_again: " + nodeRecord.get(h).getNrofDuplicateChunks() + eol;
+				 + "number_of_chunks_requested_again: " + nodeRecord.get(h).getNrofDuplicateChunks() + eol
+				 + "number_of_times_size_adjusted: " + nodeRecord.get(h).getSizeAdjustedCount();
 //				 + "all_chunks_requested: " + nodeRecord.get(h).getRequested();
 //				 + "could_have_requested: " + nodeRecord.get(h).getCouldHaveRequested();
 				
