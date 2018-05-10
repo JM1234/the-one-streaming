@@ -341,7 +341,7 @@ public class WatcherApp extends StreamingApplication{
 			m.addProperty("chunk", chunk);	
 			host.createNewMessage(m);
 			
-			sendEventToListeners(CHUNK_DELIVERED, chunk, host);
+//			sendEventToListeners(CHUNK_DELIVERED, chunk, host);
 		}
 	}
 	

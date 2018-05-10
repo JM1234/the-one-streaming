@@ -21,8 +21,8 @@ streamApp2.watcherType=1
 #streamApp3.watcherType=0
 
 Group.nrofApplications = 1
-Group.movementModel = RandomWaypoint
-#Group.movementModel = StationaryMovement
+#Group.movementModel = RandomWaypoint
+Group.movementModel = StationaryMovement
 Group.router = TVProphetRouterV2
 TVProphetRouter.secondsInTimeUnit=1
 Group.bufferSize = 5000M

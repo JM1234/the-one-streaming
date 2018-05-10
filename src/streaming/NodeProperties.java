@@ -22,15 +22,17 @@ public class NodeProperties {
 	private int nrofDuplicateChunks=0;
 	private int nrofDuplicateRequest=0;
 	private int nrofTimesRequested=0;
+	private int nrofTimesSentIndex=0;
+	private int nrofTimesSentTrans=0;
+	private int nrofTimesSentChunk=0;
 	private TreeMap<Long, Double> chunksReceived= new TreeMap<Long, Double>();;
 	private LinkedHashMap<Double, ArrayList<DTNHost>> unchoked = new LinkedHashMap<Double, ArrayList<DTNHost>>();
 	private LinkedHashMap<Double, ArrayList<DTNHost>> interested = new LinkedHashMap<Double, ArrayList<DTNHost>>();
 	private LinkedHashMap<Double,ArrayList<DTNHost>> availableH = new LinkedHashMap<Double,ArrayList<DTNHost>>();
-	private ArrayList<Long> requested = new ArrayList<Long>();
+	private	HashMap<Long, Double> requested = new HashMap<Long, Double>();
 	private long ack;
 	private int sizeAdjustedCount=0;
-	
-	private ArrayList<Long> couldHaveRequested = new ArrayList<Long>();
+	private TreeMap<Long, Double> chunkWaitTime = new TreeMap<Long, Double>();
 	
 //	public ArrayList<DTNHost> hostNames = new ArrayList<DTNHost>();
 //	public ArrayList<ArrayList<Long>> toSearch =  new ArrayList<ArrayList<Long>>();
@@ -39,6 +41,17 @@ public class NodeProperties {
 	
 	public void addChunk(long chunk){
 		chunksReceived.put(chunk, SimClock.getTime());
+		double waitTime = chunksReceived.get(chunk) - requested.get(chunk);
+		chunkWaitTime.put(chunk, waitTime);
+	}
+	
+	public double getAverageWaitTime(){
+		double average = 0;
+		for(long id : chunkWaitTime.keySet()){
+			average +=chunkWaitTime.get(id);
+		}
+		average/=chunkWaitTime.size();
+		return average;
 	}
 	
 	public void setTimeBroadcastReceived(double timeBroadcastReceived){
@@ -65,8 +78,8 @@ public class NodeProperties {
 		this.nrofTimesRequested = nrofTimesRequested;
 	}
 	
-	public void setNrofDuplicateChunks(int nrofDuplicateChunks){
-		this.nrofDuplicateChunks=nrofDuplicateChunks;
+	public void incNrOfDuplicateChunks(){
+		this.nrofDuplicateChunks++;
 	}
 
 	public void setNrofDuplicateRequest(int nrofDuplicateRequest){
@@ -106,18 +119,7 @@ public class NodeProperties {
 	}
 
 	public int getNrofDuplicateRequest(){
-//		return nrofDuplicateRequest;
-		
-		Collections.sort(requested);
-		int ctr=0;
-		long prev=requested.get(0)-1;
-		for (long id: requested){
-			if (id == prev){
-				ctr++;
-				prev=id;
-			}
-		}
-		return ctr;
+		return nrofDuplicateRequest;
 	}
 
 	public int getNrofTimesInterrupted(){
@@ -156,12 +158,19 @@ public class NodeProperties {
 		return availableH;
 	}
 	
-	public ArrayList<Long> getRequested(){
+	public HashMap<Long, Double> getRequested(){
 		return requested;
 	}
 
-	public void addRequested(ArrayList<Long> id){
-		requested.addAll(id);
+	public void addRequested(ArrayList<Long> newIds){
+		for(long newId: newIds){
+			if (requested.containsKey(newId)){
+				nrofDuplicateRequest++;
+			}
+			else{
+				requested.put(newId, SimClock.getTime()); //put the first time this was requested
+			}
+		}
 	}
 	
 	public void setAck(long ack){
@@ -171,14 +180,6 @@ public class NodeProperties {
 	public long getAck(){
 		return ack;
 	}
-
-	public void addCouldHaveRequested(ArrayList<Long> couldHaveRequested){
-		this.couldHaveRequested.addAll(couldHaveRequested);
-	}
-	
-	public ArrayList<Long> getCouldHaveRequested(){
-		return couldHaveRequested;
-	}
 	
 	public void setSizeAdjustedCount(int sizeAdjustedCount){
 		this.sizeAdjustedCount = sizeAdjustedCount;
@@ -186,6 +187,30 @@ public class NodeProperties {
 	
 	public int getSizeAdjustedCount(){
 		return sizeAdjustedCount;
+	}
+	
+	public void incNrOfTimesSentIndex(){
+		nrofTimesSentIndex++;
+	}
+	
+	public void incNrOfTimesSentTrans(){
+		nrofTimesSentTrans++;
+	}
+	
+	public void incNrOfTimesSentChunk(){
+		nrofTimesSentChunk++;
+	}
+
+	public int getNrOfTimesSentIndex(){
+		return nrofTimesSentIndex;
+	}
+	
+	public int getNrofTimesSentTrans(){
+		return nrofTimesSentTrans;
+	}
+	
+	public int getNrOfTimesSentChunk(){
+		return nrofTimesSentChunk;
 	}
 	
 }

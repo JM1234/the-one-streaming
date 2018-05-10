@@ -35,6 +35,9 @@ public class StreamAppReport extends Report implements ApplicationListener{
 	public static final String UPDATE_AVAILABLE_NEIGHBORS = "updateAvailableNeighbor";
 	public static final String UPDATE_ACK = "updateAck";
 	public static final String SIZE_ADJUSTED = "sizeAdjusted";
+	public static final String SENT_INDEX_FRAGMENT = "sentIndexFragment";
+	public static final String SENT_TRANS_FRAGMENT = "sentTransFragment";
+	public static final String SENT_CHUNK = "sentChunk";
 	
 	private HashMap<DTNHost, NodeProperties> nodeRecord = new HashMap<DTNHost, NodeProperties>();
 	private int createdChunks=0;
@@ -73,8 +76,7 @@ public class StreamAppReport extends Report implements ApplicationListener{
 			nodeProps.addChunk(id);
 		}
 		else if (event.equalsIgnoreCase(RECEIVED_DUPLICATE)){
-			int ctr = nodeProps.getNrofDuplicateChunks()+1;
-			nodeProps.setNrofDuplicateChunks(ctr);
+			nodeProps.incNrOfDuplicateChunks();
 		}
 		else if (event.equalsIgnoreCase(FIRST_TIME_REQUESTED)){
 			double time = (double) params;
@@ -84,10 +86,6 @@ public class StreamAppReport extends Report implements ApplicationListener{
 			double time = (double) params;
 			nodeProps.setTimeFirstChunkReceived(time);
 		}
-//		else if (event.equalsIgnoreCase(RESENT_REQUEST)){
-//			int ctr = nodeProps.getNrofDuplicateRequest()+1;
-//			nodeProps.setNrofDuplicateRequest(ctr);
-//		}
 		else if (event.equalsIgnoreCase(SENT_REQUEST)){
 			int ctr= nodeProps.getNrofTimesRequested()+1;
 			ArrayList<Long> id = (ArrayList<Long>) params;
@@ -113,79 +111,85 @@ public class StreamAppReport extends Report implements ApplicationListener{
 		else if (event.equalsIgnoreCase(SIZE_ADJUSTED)){
 			nodeProps.setSizeAdjustedCount(nodeProps.getSizeAdjustedCount()+1);
 		}
+		else if (event.equalsIgnoreCase(SENT_INDEX_FRAGMENT)){
+			nodeProps.incNrOfTimesSentIndex();
+		}
+		else if (event.equalsIgnoreCase(SENT_TRANS_FRAGMENT)){
+			nodeProps.incNrOfTimesSentTrans();
+		}
+		else if (event.equalsIgnoreCase(SENT_CHUNK)){
+			nodeProps.incNrOfTimesSentChunk();
+		}
 		nodeRecord.put(host, nodeProps);
 	}
 
 	public void done(){
-		String eol = System.getProperty("line.separator");
+
+//		String eol = System.getProperty("line.separator");
 		String chunkRecord="";
-		String nodesUnchoked;
-//		String nodesInterested;
-		String nodesAvailable;
-		String chunksReceived; 
+//		String nodesUnchoked;
+////		String nodesInterested;
+//		String nodesAvailable;
+//		String chunksReceived; 
+		
 		String chunksCreated = "Total Chunks Created: " + createdChunks;
 		write(chunksCreated);
 		
 		for (DTNHost h: nodeRecord.keySet()){
-				chunkRecord+= " --------" + h + "---------->" + eol 
-				 + "time_started_playing: " +  nodeRecord.get(h).getTimeStartedPlaying() + eol
-				 + "time_last_played: " + nodeRecord.get(h).getTimeLastPlayed() + eol
-				 + "number_of_times_interrupted: " + nodeRecord.get(h).getNrofTimesInterrupted() + eol
-				 + "number_of_chunks_received (total): " + nodeRecord.get(h).getNrofChunksReceived() + eol
-				 + "ack: " + nodeRecord.get(h).getAck() + eol
-				 + "chunks_requested: " + nodeRecord.get(h).getChunksReceived().keySet() + eol
-				 + "number_of_duplicate_chunks_received: " + nodeRecord.get(h).getNrofDuplicateChunks() + eol
-				 + "time_first_requested: " + nodeRecord.get(h).getTimeFirstRequested() + eol
-				 + "time_first_chunk_received: " + nodeRecord.get(h).getTimeFirstChunkReceived() + eol
-				 + "number_of_times_requested: " + nodeRecord.get(h).getNrofTimesRequested() + eol
-				 + "number_of_chunks_requested_again: " + nodeRecord.get(h).getNrofDuplicateChunks() + eol
-				 + "number_of_times_size_adjusted: " + nodeRecord.get(h).getSizeAdjustedCount();
-//				 + "all_chunks_requested: " + nodeRecord.get(h).getRequested();
-//				 + "could_have_requested: " + nodeRecord.get(h).getCouldHaveRequested();
+//				chunkRecord+= " --------" + h + "---------->" + eol 
+//				 + "time_started_playing: " +  nodeRecord.get(h).getTimeStartedPlaying() + eol
+//				 + "time_last_played: " + nodeRecord.get(h).getTimeLastPlayed() + eol
+//				 + "number_of_times_interrupted: " + nodeRecord.get(h).getNrofTimesInterrupted() + eol
+//				 + "number_of_chunks_received (total): " + nodeRecord.get(h).getNrofChunksReceived() + eol
+//				 + "ack: " + nodeRecord.get(h).getAck() + eol
+//				 + "chunks_requested: " + nodeRecord.get(h).getChunksReceived().keySet() + eol
+//				 + "number_of_duplicate_chunks_received: " + nodeRecord.get(h).getNrofDuplicateChunks() + eol
+//				 + "time_first_requested: " + nodeRecord.get(h).getTimeFirstRequested() + eol
+//				 + "time_first_chunk_received: " + nodeRecord.get(h).getTimeFirstChunkReceived() + eol
+//				 + "number_of_times_requested: " + nodeRecord.get(h).getNrofTimesRequested() + eol
+//				 + "number_of_chunks_requested_again: " + nodeRecord.get(h).getNrofDuplicateChunks() + eol
+//				 + "number_of_times_size_adjusted: " + nodeRecord.get(h).getSizeAdjustedCount() + eol
+//				 + "number_of_index_fragments_sent: " + nodeRecord.get(h).getNrOfTimesSentIndex() + eol
+//				 + "number_of_trans_fragments_sent: " + nodeRecord.get(h).getNrOfTimesSentIndex() + eol
+//				 + "total_chunks_sent: " + nodeRecord.get(h).getNrOfTimesSentChunk() + eol
+//				 + "average_wait_time:" + nodeRecord.get(h).getAverageWaitTime();
 				
-// 				nodesUnchoked =  " Unchoked nodes: " + eol;
-				
-//				Iterator<Entry<Integer, ArrayList<DTNHost>>> iterator= (Iterator<Entry<Integer, ArrayList<DTNHost>>>) nodeRecord.get(h).getUnchokeList().entrySet();
-//				Set<Entry<Double,ArrayList<DTNHost>>> entryIt = nodeRecord.get(h).getUnchokeList().entrySet();
+				double timeStartedPlaying = round(nodeRecord.get(h).getTimeStartedPlaying());
+				double timeLastPlayed =round(nodeRecord.get(h).getTimeLastPlayed());
+				long ack = nodeRecord.get(h).getAck();
+				int numberOfTimesInterrupted = nodeRecord.get(h).getNrofTimesInterrupted();
+				int numberOfChunksReceived =  nodeRecord.get(h).getNrofChunksReceived();
+				int numberOfDuplicateChunksReceived = nodeRecord.get(h).getNrofDuplicateChunks();
+				double averageWaitTime = round(nodeRecord.get(h).getAverageWaitTime());
+				double timeFirstRequested = round(nodeRecord.get(h).getTimeFirstRequested());
+				double timeFirstChunkReceived = round(nodeRecord.get(h).getTimeFirstChunkReceived());
+				int numberOfTimesRequested = nodeRecord.get(h).getNrofTimesRequested();
+				int numberOfChunksRequestedAgain = nodeRecord.get(h).getNrofDuplicateChunks();
+				int numberOfTimesAdjusted = nodeRecord.get(h).getSizeAdjustedCount();
+				int totalIndexFragmentSent = nodeRecord.get(h).getNrOfTimesSentIndex();
+				int totalTransFragmentSent = nodeRecord.get(h).getNrofTimesSentTrans();
+				int totalChunksSent = nodeRecord.get(h).getNrOfTimesSentChunk();
+						
+//				chunkRecord = String.format("%8s %s %8s %s %5s %s %4s %s %4s %s %4s %8s %s %8s %s %8s %s %4s %s %4s %s %4s %s %4s %s %4s %s %4s", 
+//						timeStartedPlaying, ' ', timeLastPlayed, ' ', ack, ' ', numberOfTimesInterrupted,' ',  numberOfChunksReceived,' ',
+//						numberOfDuplicateChunksReceived, ' ',averageWaitTime, ' ',timeFirstRequested, ' ',timeFirstChunkReceived, ' ', 
+//						numberOfTimesRequested, ' ', numberOfChunksRequestedAgain, ' ', numberOfTimesAdjusted,' ', totalIndexFragmentSent, ' ',
+//						totalTransFragmentSent,' ', totalChunksSent );
 //				
-//				for (Entry<Double, ArrayList<DTNHost>> entry : entryIt){
-//					nodesUnchoked += "     at " + entry.getKey() + ": " + entry.getValue() + eol;
-//				}
-				
-//				chunksReceived = "chunks received: " + eol;
-//				for(double time : nodeRecord.get(h).getChunksReceived().keySet()){
-//					chunksReceived+= "     " + time + " : " +  nodeRecord.get(h).getChunksReceived().get(time) +eol;
-//				}
-				
-//				nodesInterested =  " Interested nodes: " + eol;
-//				Iterator<Entry<Integer, ArrayList<DTNHost>>> iterator= (Iterator<Entry<Integer, ArrayList<DTNHost>>>) nodeRecord.get(h).getUnchokeList().entrySet();
-//				Set<Entry<Double,ArrayList<DTNHost>>> entryInt = nodeRecord.get(h).getInterestedList().entrySet();
-//				
-//				for (Entry<Double, ArrayList<DTNHost>> entry : entryInt){
-//					nodesInterested += "     at " + entry.getKey() + ": " + entry.getValue() + eol;
-//				}
-				
-//				nodesAvailable =  " Available nodes: " + eol;
-				
-//				Iterator<Entry<, Set<DTNHost>>> iterator= (Iterator<Entry<Integer, Set<DTNHost>>>) nodeRecord.get(h).getAvailableList().entrySet();
-//				Set<Entry<Double,ArrayList<DTNHost>>> entryInt = nodeRecord.get(h).getAvailableList().entrySet();
-//				
-//				for (Entry<Double, ArrayList<DTNHost>> entry : entryInt){
-//					nodesAvailable += "     at " + entry.getKey() + ": " + entry.getValue() + eol;
-//				}
+				chunkRecord = String.format("%3s%s %8s %8s %5s %4s %4s %4s %8s %8s %8s %4s %4s %4s %4s %4s %4s", 
+						h, ":" , timeStartedPlaying, timeLastPlayed, ack, numberOfTimesInterrupted,numberOfChunksReceived,
+						numberOfDuplicateChunksReceived, averageWaitTime, timeFirstRequested, timeFirstChunkReceived,
+						numberOfTimesRequested, numberOfChunksRequestedAgain,  numberOfTimesAdjusted,totalIndexFragmentSent,
+						totalTransFragmentSent,totalChunksSent );
 				
 				write(chunkRecord);
-//				write(nodesUnchoked);
-//				write(chunksReceived);
-//				write(nodesInterested);
-//				write(nodesAvailable);
-				chunkRecord="";
-//				chunksReceived="";
-//				nodesAvailable="";
-				nodesUnchoked="";
-//				nodesInterested="";
 		}
 		super.done();
 	}
+	
+	public double round(double value) {
+		return (double)Math.round(value * 100)/100;
+	}
+	
 	
 }

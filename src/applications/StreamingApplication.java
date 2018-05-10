@@ -35,7 +35,6 @@ public abstract class StreamingApplication extends Application{
 	public static final String BROADCAST_REQUEST = "REQUEST_STREAM";
 	public static final String BROADCAST_CHUNK_SENT = "CHUNK_SENT";
 	public static final String CHUNK_RECEIVED = "RECEIVED_CHUNK";
-	public static final String CHUNK_DELIVERED= "DELIVERED_CHUNK"; //as a broadcaster
 	public static final String FRAGMENT_RECEIVED = "RECEIVED_FRAGMENT";
 	public static final String BROADCAST_FRAGMENT_SENT = "SENT_FRAGMENT";
 	public static final String FRAGMENT_DELIVERED = "DELIVERED_FRAGMENT";

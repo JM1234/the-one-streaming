@@ -254,7 +254,7 @@ public class BroadcasterAppV2 extends StreamingApplication{
 				m.addProperty(TVProphetRouterV2.MESSAGE_WEIGHT, 3);
 				host.createNewMessage(m);
 	
-				sendEventToListeners(CHUNK_DELIVERED, chunk, host);
+//				sendEventToListeners(CHUNK_DELIVERED, chunk, host);
 //			}
 //		}
 	}

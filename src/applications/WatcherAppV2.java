@@ -13,6 +13,7 @@ import core.Message;
 import core.Settings;
 import core.SimClock;
 import fragmentation.Fragment;
+import report.StreamAppReport;
 import routing.TVProphetRouter;
 import routing.TVProphetRouterV2;
 import streaming.Stream;
@@ -273,6 +274,7 @@ public class WatcherAppV2 extends StreamingApplication {
 					props.playNext();
 					status = PLAYING;
 					this.lastTimePlayed = curTime;
+					sendEventToListeners(StreamAppReport.LAST_PLAYED, lastTimePlayed, host);
 					System.out.println(host + " playing: " + props.getPlaying() + " time: "+lastTimePlayed);
 				}
 				else{ // if (status==PLAYING)
@@ -455,7 +457,7 @@ public class WatcherAppV2 extends StreamingApplication {
 		m.addProperty(TVProphetRouterV2.MESSAGE_WEIGHT, 3);
 		host.createNewMessage(m);
 			
-		sendEventToListeners(CHUNK_DELIVERED, chunk, host);
+//		sendEventToListeners(CHUNK_DELIVERED, chunk, host);
 	}
 
 	public int getWatcherType(){

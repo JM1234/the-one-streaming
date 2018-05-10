@@ -345,6 +345,7 @@ public class WatcherAppV3 extends StreamingApplication{
 			props.setChunkStart(chunk.getChunkID());
 			status = PLAYING;
 			this.lastTimePlayed=SimClock.getTime();
+			sendEventToListeners(StreamAppReport.STARTED_PLAYING, lastTimePlayed, host);
 		}
 	}
 	
@@ -376,11 +377,11 @@ public class WatcherAppV3 extends StreamingApplication{
 					status = PLAYING;
 					this.lastTimePlayed = curTime;
 //					System.out.println(host + " playing: " + props.getPlaying() + " time: "+lastTimePlayed);
-					if (props.getPlaying() == 1) {
-						sendEventToListeners(StreamAppReport.STARTED_PLAYING, lastTimePlayed, host);
-					}
+//					if (props.getPlaying() == 1) {
+//						sendEventToListeners(StreamAppReport.STARTED_PLAYING, lastTimePlayed, host);
+//					}
 				}
-				else if (status==PLAYING){
+				else { //if (status==PLAYING){
 					//hope for the best na aaruon utro ini na missing
 					status = WAITING;
 					sendEventToListeners(StreamAppReport.INTERRUPTED, null, host);
@@ -501,7 +502,7 @@ public class WatcherAppV3 extends StreamingApplication{
 			if (!toRequest.isEmpty()){
 				System.out.println(host + " asking to: " + to + " Chunks: " + toRequest);
 				sendRequest(host,to, (ArrayList<Long>) (toRequest.clone()));
-				sendEventToListeners(StreamAppReport.SENT_REQUEST, toRequest ,host); //di pa ak sure kun diin ini dapat
+				sendEventToListeners(StreamAppReport.SENT_REQUEST, toRequest.clone(),host); //di pa ak sure kun diin ini dapat
 			}
 		}
 		
@@ -805,7 +806,7 @@ public class WatcherAppV3 extends StreamingApplication{
 		m.addProperty(TVProphetRouterV2.MESSAGE_WEIGHT, 2);
 		host.createNewMessage(m);
 			
-		sendEventToListeners(CHUNK_DELIVERED, chunk, host);
+		sendEventToListeners(StreamAppReport.SENT_CHUNK, chunk, host);
 	}
 
 	private void sendIndexFragment(DTNHost host, DTNHost to, Fragment frag) {
@@ -822,6 +823,7 @@ public class WatcherAppV3 extends StreamingApplication{
 		m.addProperty(TVProphetRouterV2.MESSAGE_WEIGHT, 2);
 		host.createNewMessage(m);
 
+		sendEventToListeners(StreamAppReport.SENT_INDEX_FRAGMENT, null, host);
 //		sendEventToListeners(FRAGMENT_DELIVERED, null, host);
 		
 		System.out.println( host+ " transmission preds: " + ((TVProphetRouterV2) host.getRouter()).getTransmissionPreds(to));
@@ -852,6 +854,7 @@ public class WatcherAppV3 extends StreamingApplication{
 		System.out.println(host + " frag size: " + frag.getSize());
 		
 //		sendEventToListeners(FRAGMENT_DELIVERED, null, host);
+		sendEventToListeners(StreamAppReport.SENT_TRANS_FRAGMENT, null, host);
 	}
 	
 	

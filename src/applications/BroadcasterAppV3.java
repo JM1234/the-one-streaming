@@ -511,7 +511,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		m.addProperty(TVProphetRouterV2.MESSAGE_WEIGHT, 2);
 		host.createNewMessage(m);
 
-		sendEventToListeners(CHUNK_DELIVERED, chunk, host);
+		sendEventToListeners(StreamAppReport.SENT_CHUNK, chunk, host);
 	}
 	
 	private void sendIndexFragment(DTNHost host, DTNHost to, Fragment frag) {
@@ -528,7 +528,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		m.addProperty(TVProphetRouterV2.MESSAGE_WEIGHT, 2);
 		host.createNewMessage(m);
 
-//		sendEventToListeners(FRAGMENT_DELIVERED, null, host);
+		sendEventToListeners(StreamAppReport.SENT_INDEX_FRAGMENT, null, host);
 		
 		System.out.println( host+ " transmission preds: " + ((TVProphetRouterV2) host.getRouter()).getTransmissionPreds(to));
 		System.out.println(host + " frag size: " + frag.getSize());
@@ -558,6 +558,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		System.out.println(host + " frag size: " + frag.getSize());
 		
 //		sendEventToListeners(FRAGMENT_DELIVERED, null, host);
+		sendEventToListeners(StreamAppReport.SENT_TRANS_FRAGMENT, null, host);
 	}
 	
 	/*

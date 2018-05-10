@@ -324,7 +324,6 @@ public class BroadcasterApp extends StreamingApplication {
 			
 //			((TVProphetRouter) host.getRouter()).addUrgentMessage(m, true);  
 			
-			sendEventToListeners(CHUNK_DELIVERED, chunk, host);
 		}
 
 	}
