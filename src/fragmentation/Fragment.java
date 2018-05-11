@@ -82,6 +82,7 @@ public class Fragment {
 	
 	public void updateBundle(int pos, StreamChunk c){ //mainly used by watcher. adding transmission level frags
 		bChunks.set(pos, c);
+		
 		System.out.println( "trans updated: " + pos +":"+c.getChunkID());
 		if (pos < startPosition || startPosition==-1){
 			startPosition = pos;
@@ -91,6 +92,7 @@ public class Fragment {
 		}
 		
 		checkIfIndexComplete();
+		System.out.println(" isComplete: " + isComplete);
 	}
 	
 	private void checkIfIndexComplete(){

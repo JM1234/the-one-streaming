@@ -25,6 +25,7 @@ public class NodeProperties {
 	private int nrofTimesSentIndex=0;
 	private int nrofTimesSentTrans=0;
 	private int nrofTimesSentChunk=0;
+	private int nrofFragmentsCreated=0;
 	private TreeMap<Long, Double> chunksReceived= new TreeMap<Long, Double>();;
 	private LinkedHashMap<Double, ArrayList<DTNHost>> unchoked = new LinkedHashMap<Double, ArrayList<DTNHost>>();
 	private LinkedHashMap<Double, ArrayList<DTNHost>> interested = new LinkedHashMap<Double, ArrayList<DTNHost>>();
@@ -201,6 +202,10 @@ public class NodeProperties {
 		nrofTimesSentChunk++;
 	}
 
+	public void incNrOfFragmentsCreated(){
+		nrofFragmentsCreated++;
+	}
+	
 	public int getNrOfTimesSentIndex(){
 		return nrofTimesSentIndex;
 	}
@@ -211,6 +216,10 @@ public class NodeProperties {
 	
 	public int getNrOfTimesSentChunk(){
 		return nrofTimesSentChunk;
+	}
+	
+	public int getNrOfFragmentsCreated(){
+		return nrofFragmentsCreated;
 	}
 	
 }

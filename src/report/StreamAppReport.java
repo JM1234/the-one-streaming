@@ -38,6 +38,8 @@ public class StreamAppReport extends Report implements ApplicationListener{
 	public static final String SENT_INDEX_FRAGMENT = "sentIndexFragment";
 	public static final String SENT_TRANS_FRAGMENT = "sentTransFragment";
 	public static final String SENT_CHUNK = "sentChunk";
+	public static final String FRAGMENT_CREATED = "fragmentCreated";
+
 	
 	private HashMap<DTNHost, NodeProperties> nodeRecord = new HashMap<DTNHost, NodeProperties>();
 	private int createdChunks=0;
@@ -120,6 +122,9 @@ public class StreamAppReport extends Report implements ApplicationListener{
 		else if (event.equalsIgnoreCase(SENT_CHUNK)){
 			nodeProps.incNrOfTimesSentChunk();
 		}
+		else if (event.equalsIgnoreCase(FRAGMENT_CREATED)){
+			nodeProps.incNrOfFragmentsCreated();
+		}
 		nodeRecord.put(host, nodeProps);
 	}
 
@@ -169,18 +174,19 @@ public class StreamAppReport extends Report implements ApplicationListener{
 				int totalIndexFragmentSent = nodeRecord.get(h).getNrOfTimesSentIndex();
 				int totalTransFragmentSent = nodeRecord.get(h).getNrofTimesSentTrans();
 				int totalChunksSent = nodeRecord.get(h).getNrOfTimesSentChunk();
-						
+				int nrOfFragmentsCreated = nodeRecord.get(h).getNrOfFragmentsCreated();
+				
 //				chunkRecord = String.format("%8s %s %8s %s %5s %s %4s %s %4s %s %4s %8s %s %8s %s %8s %s %4s %s %4s %s %4s %s %4s %s %4s %s %4s", 
 //						timeStartedPlaying, ' ', timeLastPlayed, ' ', ack, ' ', numberOfTimesInterrupted,' ',  numberOfChunksReceived,' ',
 //						numberOfDuplicateChunksReceived, ' ',averageWaitTime, ' ',timeFirstRequested, ' ',timeFirstChunkReceived, ' ', 
 //						numberOfTimesRequested, ' ', numberOfChunksRequestedAgain, ' ', numberOfTimesAdjusted,' ', totalIndexFragmentSent, ' ',
 //						totalTransFragmentSent,' ', totalChunksSent );
 //				
-				chunkRecord = String.format("%3s%s %8s %8s %5s %4s %4s %4s %8s %8s %8s %4s %4s %4s %4s %4s %4s", 
+				chunkRecord = String.format("%3s%s %8s %8s %5s %4s %4s %4s %8s %8s %8s %4s %4s %4s %4s %4s %4s %4s", 
 						h, ":" , timeStartedPlaying, timeLastPlayed, ack, numberOfTimesInterrupted,numberOfChunksReceived,
 						numberOfDuplicateChunksReceived, averageWaitTime, timeFirstRequested, timeFirstChunkReceived,
 						numberOfTimesRequested, numberOfChunksRequestedAgain,  numberOfTimesAdjusted,totalIndexFragmentSent,
-						totalTransFragmentSent,totalChunksSent );
+						totalTransFragmentSent,totalChunksSent, nrOfFragmentsCreated );
 				
 				write(chunkRecord);
 		}

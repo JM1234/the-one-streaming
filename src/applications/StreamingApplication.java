@@ -170,7 +170,7 @@ public abstract class StreamingApplication extends Application{
 	 * Delete hosts in sentHello that are already down.
 	 * Automatically removes buffer for disconnected nodes.
 	 */
-	protected void checkHelloedConnection(DTNHost host){
+	protected void checkHelloedConnection(DTNHost host){ 
 		ArrayList<DTNHost> currConnected = new ArrayList<DTNHost>();
 		for (Connection c : host.getConnections()){
 			currConnected.add(c.getOtherNode(host));
@@ -183,7 +183,7 @@ public abstract class StreamingApplication extends Application{
 	    for(DTNHost dtnHost : disconnectedN){
 			removeBufferedMessages(host, dtnHost);
 			interestedNeighbors.remove(dtnHost); //if it sent an interested message, remove it from the list of interested
-			updateUnchoked(unchoked.indexOf(dtnHost), null); //if it is included among the current list of unchoked
+			updateUnchoked(unchoked.indexOf(dtnHost), null); //if it is included among the current list of unchoked  -----------------------feeling ko may something wrong ini
 //			sentHello.remove(sentHello.indexOf(dtnHost));
 			helloSent.remove(dtnHost);
 	    }

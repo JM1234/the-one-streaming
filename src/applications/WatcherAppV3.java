@@ -181,6 +181,12 @@ public class WatcherAppV3 extends StreamingApplication{
 						}
 					}
 				}
+				else{
+					if (!hasHelloed(msg.getFrom())){
+						sendBuffermap(host, msg.getFrom(), props.getBuffermap()); 
+						helloSent.put(msg.getFrom(), props.getBuffermap());
+					}
+				}
 			}
 			
 			else if(msg_type.equalsIgnoreCase(BROADCAST_CHUNK_SENT)){ //received chunks				
@@ -201,21 +207,25 @@ public class WatcherAppV3 extends StreamingApplication{
 						toFragment.put(fragId, temp);
 					}
 					
+					if (!sadf.doesExist(fragId)){
+//						if (toFragment.get(fragId).size() == SADFragmentation.NO_OF_CHUNKS_PER_FRAG){
+						sadf.initTransLevelFrag(fragId);
+					}
 					//check if we should include it on fragment now
 					if (sadf.doesExist(fragId) && !sadf.getFragment(fragId).isComplete()){
 						ArrayList<StreamChunk> hold = toFragment.get(fragId);
 						for (StreamChunk c: hold){
+							System.out.println(" pos: " + ((int)c.getChunkID())%SADFragmentation.NO_OF_CHUNKS_PER_FRAG);
 							sadf.addChunkToFragment(fragId, ((int)c.getChunkID())%SADFragmentation.NO_OF_CHUNKS_PER_FRAG, c);
 //							toFragment.get(fragId).remove(c);
 						}
-						toFragment.remove(fragId);
-					}
-					else if (!sadf.doesExist(fragId)){
-						if (toFragment.get(fragId).size() == SADFragmentation.NO_OF_CHUNKS_PER_FRAG){
-							sadf.createFragment(fragId, toFragment.get(fragId));
-							toFragment.remove(fragId);
+						
+						if (sadf.getFragment(fragId).isComplete()){
+							sendEventToListeners(StreamAppReport.FRAGMENT_CREATED, null, host);
 						}
-					}
+						
+						toFragment.remove(fragId);
+					}		
 				}
 				
 				interpretChunks(host, chunk, msg.getFrom());
@@ -231,6 +241,7 @@ public class WatcherAppV3 extends StreamingApplication{
 //				}
 				
 				evaluateToSend(host, msg);
+//				sendWithoutFrag(host, msg);
 			}
 
 			else if (msg_type.equals(INTERESTED)){ 	//evaluate response if choke or unchoke
@@ -271,7 +282,7 @@ public class WatcherAppV3 extends StreamingApplication{
 				Fragment frag = (Fragment) msg.getProperty("fragment");
 				int fragType = (int) msg.getProperty("frag_type");
 				
-				System.out.println(host + " received frag " + frag.getId());
+				System.out.println(host + " received frag " + frag.getId() + " fragType: "+fragType);
 				
 				decodeFragment(host, frag, fragType, msg.getFrom());
 				
@@ -286,6 +297,7 @@ public class WatcherAppV3 extends StreamingApplication{
 			
 			System.out.println(" full fragment received. " + frag.getId());
 			sadf.createFragment(frag.getId(), frag.getBundled());
+			sendEventToListeners(StreamAppReport.FRAGMENT_CREATED, null, host);
 			sadf.getFragment(frag.getId()).setIndexComplete();
 			
 			for (StreamChunk c: frag.getBundled()){
@@ -301,11 +313,21 @@ public class WatcherAppV3 extends StreamingApplication{
 
 			if (!sadf.doesExist(currFrag)){
 				sadf.initTransLevelFrag(frag.getId());
+				System.out.println(host + " fragment not yet existing: " + currFrag + ". To frag:  " + toFragment.get(currFrag) );
+//				for (StreamChunk c: toFragment.get(currFrag)){
+//					sadf.addChunkToFragment(currFrag, ((int)c.getChunkID())%SADFragmentation.NO_OF_CHUNKS_PER_FRAG, c);
+//				}
+//				toFragment.remove(currFrag);
+				
 			}
 
 			for (int i=0, pos = frag.getStartPosition(); pos<=frag.getEndPosition(); pos++, i++){
 				sadf.addChunkToFragment(currFrag, pos, bundle.get(i));
 				interpretChunks(host, bundle.get(i), from);
+			}
+			
+			if (sadf.getFragment(frag.getId()).isComplete()){
+				sendEventToListeners(StreamAppReport.FRAGMENT_CREATED, null, host);
 			}
 			
 //			for (int i=frag.startPosition(); i<=frag.getEndPosition(); i++){
@@ -353,8 +375,9 @@ public class WatcherAppV3 extends StreamingApplication{
 	public void update(DTNHost host) {
 
 		double curTime = SimClock.getTime();
-		removeExpiredRequest();
+		
 		checkHelloedConnection(host);
+		removeExpiredRequest();
 		
 		try{
 			List<Connection> hostConnection = host.getConnections(); 
@@ -378,7 +401,7 @@ public class WatcherAppV3 extends StreamingApplication{
 					this.lastTimePlayed = curTime;
 //					System.out.println(host + " playing: " + props.getPlaying() + " time: "+lastTimePlayed);
 //					if (props.getPlaying() == 1) {
-//						sendEventToListeners(StreamAppReport.STARTED_PLAYING, lastTimePlayed, host);
+						sendEventToListeners(StreamAppReport.LAST_PLAYED, lastTimePlayed, host);
 //					}
 				}
 				else { //if (status==PLAYING){
@@ -649,6 +672,16 @@ public class WatcherAppV3 extends StreamingApplication{
 		}
 	}
 	
+
+	private void sendWithoutFrag(DTNHost host, Message msg){
+		ArrayList<Long> request = (ArrayList<Long>) msg.getProperty("chunk");
+		ArrayList<Long> bundled = new ArrayList<Long>();
+		
+		for (long rChunk: request){
+			sendChunk(props.getChunk(rChunk), host, msg.getFrom());
+		}
+	}
+	
 	private void evaluateToSend(DTNHost host, Message msg) {
 		ArrayList<Long> request = (ArrayList<Long>) msg.getProperty("chunk");
 		ArrayList<Long> bundled = new ArrayList<Long>();
@@ -859,13 +892,20 @@ public class WatcherAppV3 extends StreamingApplication{
 	
 	
 	public void updateHello(DTNHost host, long newChunk, DTNHost from){
+		checkHelloedConnection(host);
+		
 		ArrayList<Long> latest = new ArrayList<Long>();
 		latest.add(newChunk);
 		
 		for (DTNHost h: unchoked){
 			if (h!=null && !h.equals(from)) {
 				sendBuffermap(host, h, (ArrayList<Long>) latest.clone());
-				helloSent.get(h).addAll(latest);
+				System.out.println(" h: " + h);
+				try{
+					helloSent.get(h).addAll(latest);
+				}catch(NullPointerException e){
+					this.updateUnchoked(unchoked.indexOf(h), null);
+				}
 			}
 		}
 		

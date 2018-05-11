@@ -46,7 +46,7 @@ public class TVProphetRouterV2 extends ActiveRouter {
 	 * TV_PROPHET CONSTANTS
 	 */
 	public static final double T_OLD = 20; //seconds
-	public static final double V_OLD = 100; //KBps
+	public static final double V_OLD = 31250; //KBps
 	public static final double TV_ALPHA = 0.5;
 	public static final double TV_GAMMA = 0.98;
 	
@@ -71,6 +71,8 @@ public class TVProphetRouterV2 extends ActiveRouter {
 
 	/** last delivery predictability update (sim)time */
 	private double lastAgeUpdate;
+	/** last fragment size predictability update (sim)time */
+	private double lastFragUpdate=0;
 
 	/** historical connection duration */
 	private Map<DTNHost, Double> tava;
@@ -78,9 +80,10 @@ public class TVProphetRouterV2 extends ActiveRouter {
 	private Map<DTNHost, Double> vava;
 	
 	private static double indexSize;
-	private static double transferRate = 100; //KBps. bluetooth
+	private static double transferRate = 31250; //KBps.
 	private static double connectionDuration = 60; //seconds. distribution of connection duration
 	private double endTime;
+	
 	private HashMap<DTNHost, Double> timeRecord; 
 	
 	private double transSize; 
@@ -133,8 +136,9 @@ public class TVProphetRouterV2 extends ActiveRouter {
 //			updateTransitivePreds(otherHost);
 			
 			//add transitive sizes per host here
+			updateTransmissionPreds(getHost() , otherHost, con);
 			timeRecord.put(otherHost, SimClock.getTime());
-			updateTransmissionPreds(otherHost);
+			
 		}		
 		
 		else{
@@ -146,53 +150,106 @@ public class TVProphetRouterV2 extends ActiveRouter {
 			System.out.println(" duration: " +round(duration) + " connection speed: " + (con.getSpeed()/1000) ); //+ "rounded speed: " + round(con.getSpeed()));
 			
 			updateTava(otherHost, round(duration));
-			updateVava(otherHost, con.getSpeed()/1000);
-			timeRecord.remove(otherHost);
+			updateVava(otherHost,con.getSpeed()/1000);
+			timeRecord.put(otherHost, round(duration));
 		}
 		
 	}
 	
+	private double getAgeFragPreds(){
+		double timeDiff = (SimClock.getTime() - this.lastFragUpdate) /
+				secondsInTimeUnit;	
+
+		System.out.println(" time diff: " +timeDiff);
+			double mult = Math.pow(TV_GAMMA, timeDiff);
+			
+//			for (Map.Entry<DTNHost, Double> e : preds.entrySet()) {
+//				e.setValue(e.getValue()*mult);
+//			}
+
+			System.out.println("mult: " + mult);
+			return mult;
+	}
+	
 	private void updateTava(DTNHost host, double tCurrent){
-//		System.out.println("Updating tava");
-		double tOld;
-		try{
-			tOld= tava.get(host); 
-		}catch(NullPointerException e){
-			tOld = T_OLD;
+		System.out.println(" tcurrent: " + tCurrent);
+		double timeDiff = (SimClock.getTime() - this.lastFragUpdate) /
+				secondsInTimeUnit;	
+		
+		if (timeDiff == 0) {
+			return;
 		}
 		
-		double t = round(tOld*TV_ALPHA*TV_GAMMA + tCurrent*(1-TV_ALPHA*TV_GAMMA));	
-		System.out.println(host + " update tava: " + t);
+		double tOld;
+		double t;
+		try{
+			tOld= tava.get(host); 
+			t = round( (tOld*TV_ALPHA*TV_GAMMA) + tCurrent*(1-(TV_ALPHA*TV_GAMMA)));	
+		}catch(NullPointerException e){
+			t = T_OLD;
+		}
+		
+		System.out.println(" put @ tava " +t);
+		
 		tava.put(host, t);
 	}
 	
 	private void updateVava(DTNHost host, double vCurrent){
-		double vOld;
-//		System.out.println("Updating tava");
-		try{
-			vOld = vava.get(host);
-		}catch(NullPointerException e){
-			vOld = V_OLD;
+		
+		double timeDiff = (SimClock.getTime() - this.lastFragUpdate) /
+				secondsInTimeUnit;	
+		
+		if (timeDiff == 0) {
+			return;
 		}
 		
-		double v = round(vOld*TV_ALPHA*TV_GAMMA + vCurrent*(1-TV_ALPHA*TV_GAMMA));
-		System.out.println(host + " update vava: " + v);
+		double vOld;
+		double v;
+		try{
+			vOld = vava.get(host);
+			v = round((vOld*TV_ALPHA*TV_GAMMA) + vCurrent*(1-(TV_ALPHA*TV_GAMMA)));
+
+		}catch(NullPointerException e){
+			v = V_OLD;
+		}
+		
+		System.out.println(" put @ vava " + v);
 		vava.put(host, v);
+		this.lastFragUpdate = SimClock.getTime();
+		System.out.println(" lastfragupdate: " + lastFragUpdate);
 	}
 	
-	private double getTransSize(DTNHost host){
+	private double getTransSize(DTNHost host, DTNHost otherHost, Connection con){
+		//if may time difference, ageFragPreds. if waray, get dayun
+		//--updateTava
+		//--updateVava
+		double duration=60; //generalized estimated average contact duration
+//		System.out.println(" timeRecord: " +timeRecord);
 		try{
-			transSize = round( (tava.get(host) * vava.get(host) * 0.4)/1000 ) ;
-			System.out.println(host + " tava: " + tava.get(host) + " vava: " + vava.get(host) + " calculated: " + transSize);
+			duration = timeRecord.get(otherHost);
+		}catch(NullPointerException e){};
+	
+		updateTava(otherHost, duration);
+		updateVava(otherHost, con.getSpeed());
+	
+//		double currTava = tava.get(otherHost);
+//		double currVava = vava.get(otherHost);
+		
+		try{
+			transSize = (tava.get(otherHost) * vava.get(otherHost) * 0.4);
 		}catch(NullPointerException e){
 			transSize = T_OLD * V_OLD * 0.4;
 		}
+		System.out.println(host + " tava: " + tava.get(otherHost) + " vava: " + vava.get(otherHost) + " calculated: " + transSize);
+
 		return transSize;
+	
 	}
 	
+	
 	/** updates transmission predictions */
-	private void updateTransmissionPreds(DTNHost host){
-		transmissionPreds.put(host,  getTransSize(host));
+	private void updateTransmissionPreds(DTNHost host, DTNHost otherHost, Connection con){
+		transmissionPreds.put(otherHost,  getTransSize(host, otherHost, con));
 	}
 	
 	public double getTransmissionPreds(DTNHost host){

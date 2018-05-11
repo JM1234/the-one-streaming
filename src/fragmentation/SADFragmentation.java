@@ -9,7 +9,7 @@ import streaming.StreamChunk;
 public class SADFragmentation {
 	
 	// equated to per chunk size and index level size
-	public static final int NO_OF_CHUNKS_PER_FRAG = 500;
+	public static final int NO_OF_CHUNKS_PER_FRAG = 200;
 	public static final int INDEX_LEVEL=1;
 	public static final int TRANS_LEVEL=2;
 
@@ -33,6 +33,9 @@ public class SADFragmentation {
 	public void createFragment( int id, ArrayList<StreamChunk> chunks){ //mainly used by watcher 
 		fragments.put(id, new Fragment(id, chunks));
 		System.out.println( " created new fragment " + id + " firstchunkid: " + fragments.get(id).getFirstChunkID());
+		if (chunks.size() == SADFragmentation.NO_OF_CHUNKS_PER_FRAG){
+			fragments.get(id).setIndexComplete();
+		}
 	}
 	
 //	public int getFragSize(int id){
