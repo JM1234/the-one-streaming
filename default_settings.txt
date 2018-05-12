@@ -6,7 +6,7 @@
 Scenario.name = DTNStreaming
 Scenario.simulateConnections = true
 Scenario.updateInterval = 0.01
-Scenario.endTime = 2000
+Scenario.endTime = 3600
 Scenario.nrofHostGroups = 1
 
 ## Interface-specific settings:
@@ -23,7 +23,7 @@ btInterface.transmitSpeed = 200k
 btInterface.transmitRange = 60
 
 wifiDirectInterface.type = InterferenceLimitedInterface
-wifiDirectInterface.transmitSpeed = 250M
+wifiDirectInterface.transmitSpeed = 31250k
 wifiDirectInterface.transmitRange = 200
 
 ## Group-specific settings:
@@ -72,7 +72,7 @@ Group.speed = 0.3, 0.3
 
 ## Movement model settings
 # seed for movement models' pseudo random number generator (default = 0)
-MovementModel.rngSeed = 1
+MovementModel.rngSeed = 10
 # World's size for Movement Models without implicit size (width, height; meters)
 MovementModel.worldSize = 1000,1000
 # How long time to move hosts in the world before real simulation

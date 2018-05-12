@@ -17,7 +17,7 @@ import core.Settings;
 import core.SimClock;
 import fragmentation.Fragment;
 import fragmentation.SADFragmentation;
-import report.StreamAppReport;
+import report.StreamAppReporter;
 import routing.TVProphetRouterV2;
 import streaming.Stream;
 import streaming.StreamChunk;
@@ -131,7 +131,7 @@ public class WatcherAppV3 extends StreamingApplication{
 				System.out.println(" broadcaster address: " + broadcasterAddress);
 				lastChokeInterval = SimClock.getTime();
 				lastOptimalInterval = SimClock.getTime();
-				sendEventToListeners(StreamAppReport.BROADCAST_RECEIVED, SimClock.getTime(), host);
+				sendEventToListeners(StreamAppReporter.BROADCAST_RECEIVED, SimClock.getTime(), host);
 			}
 			
 			else if (msg_type.equals(HELLO)){
@@ -221,7 +221,7 @@ public class WatcherAppV3 extends StreamingApplication{
 						}
 						
 						if (sadf.getFragment(fragId).isComplete()){
-							sendEventToListeners(StreamAppReport.FRAGMENT_CREATED, null, host);
+							sendEventToListeners(StreamAppReporter.FRAGMENT_CREATED, null, host);
 						}
 						
 						toFragment.remove(fragId);
@@ -260,7 +260,7 @@ public class WatcherAppV3 extends StreamingApplication{
 				
 				evaluateRequest(host, msg);
 				ArrayList<DTNHost> availableH = new ArrayList<DTNHost>(availableNeighbors.keySet());
-				sendEventToListeners(StreamAppReport.UPDATE_AVAILABLE_NEIGHBORS, availableH, host);
+				sendEventToListeners(StreamAppReporter.UPDATE_AVAILABLE_NEIGHBORS, availableH, host);
 			}
 
 			else if (msg_type.equals(CHOKE)){
@@ -268,7 +268,7 @@ public class WatcherAppV3 extends StreamingApplication{
 				//remove didi an neighbors na dati nag unchoke ha at. diri na hya api ha mga dapat aruan
 				availableNeighbors.remove(msg.getFrom());
 				ArrayList<DTNHost> availableH = new ArrayList<DTNHost>(availableNeighbors.keySet());
-				sendEventToListeners(StreamAppReport.UPDATE_AVAILABLE_NEIGHBORS, availableH, host);
+				sendEventToListeners(StreamAppReporter.UPDATE_AVAILABLE_NEIGHBORS, availableH, host);
 			}
 			
 			else if (msg_type.equalsIgnoreCase(UNINTERESTED)){
@@ -297,7 +297,7 @@ public class WatcherAppV3 extends StreamingApplication{
 			
 			System.out.println(" full fragment received. " + frag.getId());
 			sadf.createFragment(frag.getId(), frag.getBundled());
-			sendEventToListeners(StreamAppReport.FRAGMENT_CREATED, null, host);
+			sendEventToListeners(StreamAppReporter.FRAGMENT_CREATED, null, host);
 			sadf.getFragment(frag.getId()).setIndexComplete();
 			
 			for (StreamChunk c: frag.getBundled()){
@@ -327,7 +327,7 @@ public class WatcherAppV3 extends StreamingApplication{
 			}
 			
 			if (sadf.getFragment(frag.getId()).isComplete()){
-				sendEventToListeners(StreamAppReport.FRAGMENT_CREATED, null, host);
+				sendEventToListeners(StreamAppReporter.FRAGMENT_CREATED, null, host);
 			}
 			
 //			for (int i=frag.startPosition(); i<=frag.getEndPosition(); i++){
@@ -341,19 +341,19 @@ public class WatcherAppV3 extends StreamingApplication{
 	private void interpretChunks(DTNHost host, StreamChunk chunk, DTNHost from){
 //		System.out.println(host + " received chunk " + chunk.getChunkID());
 		if (props.getBuffermap().size()==0){ //first time received
-			sendEventToListeners(StreamAppReport.FIRST_TIME_RECEIVED, SimClock.getTime(), host);
+			sendEventToListeners(StreamAppReporter.FIRST_TIME_RECEIVED, SimClock.getTime(), host);
 		}
 		
 		if (props.getChunk(chunk.getChunkID())==null){ //if this is not a duplicate
 			props.addChunk(chunk);			
 			props.setAck(chunk.getChunkID());
-			sendEventToListeners(StreamAppReport.UPDATE_ACK, props.getAck(), host);
-			sendEventToListeners(StreamAppReport.RECEIVED_CHUNK, chunk.getChunkID(), host);
+			sendEventToListeners(StreamAppReporter.UPDATE_ACK, props.getAck(), host);
+			sendEventToListeners(StreamAppReporter.RECEIVED_CHUNK, chunk.getChunkID(), host);
 			updateHello(host, chunk.getChunkID(), from);
 //			System.out.println(host + " updated:  " + props.getBuffermap());
 		}
 		else{
-			sendEventToListeners(StreamAppReport.RECEIVED_DUPLICATE, chunk.getChunkID(), host);
+			sendEventToListeners(StreamAppReporter.RECEIVED_DUPLICATE, chunk.getChunkID(), host);
 		}
 
 		chunkRequest.remove(chunk.getChunkID()); //remove granted requests
@@ -367,7 +367,7 @@ public class WatcherAppV3 extends StreamingApplication{
 			props.setChunkStart(chunk.getChunkID());
 			status = PLAYING;
 			this.lastTimePlayed=SimClock.getTime();
-			sendEventToListeners(StreamAppReport.STARTED_PLAYING, lastTimePlayed, host);
+			sendEventToListeners(StreamAppReporter.STARTED_PLAYING, lastTimePlayed, host);
 		}
 	}
 	
@@ -401,13 +401,13 @@ public class WatcherAppV3 extends StreamingApplication{
 					this.lastTimePlayed = curTime;
 //					System.out.println(host + " playing: " + props.getPlaying() + " time: "+lastTimePlayed);
 //					if (props.getPlaying() == 1) {
-						sendEventToListeners(StreamAppReport.LAST_PLAYED, lastTimePlayed, host);
+						sendEventToListeners(StreamAppReporter.LAST_PLAYED, lastTimePlayed, host);
 //					}
 				}
 				else { //if (status==PLAYING){
 					//hope for the best na aaruon utro ini na missing
 					status = WAITING;
-					sendEventToListeners(StreamAppReport.INTERRUPTED, null, host);
+					sendEventToListeners(StreamAppReporter.INTERRUPTED, null, host);
 					
 //					//send request here again if request is expired. because last chunk requested did not arrive
 
@@ -463,8 +463,8 @@ public class WatcherAppV3 extends StreamingApplication{
 			}
 			
 			lastChokeInterval = curTime;
-			sendEventToListeners(StreamAppReport.UNCHOKED, unchoked.clone(), host);
-			sendEventToListeners(StreamAppReport.INTERESTED, recognized.clone(), host);
+			sendEventToListeners(StreamAppReporter.UNCHOKED, unchoked.clone(), host);
+			sendEventToListeners(StreamAppReporter.INTERESTED, recognized.clone(), host);
 //			System.out.println("Interested Nodes Now: " + recognized + " Unchoked Now: " + unchoked);
 		}
 
@@ -525,7 +525,7 @@ public class WatcherAppV3 extends StreamingApplication{
 			if (!toRequest.isEmpty()){
 				System.out.println(host + " asking to: " + to + " Chunks: " + toRequest);
 				sendRequest(host,to, (ArrayList<Long>) (toRequest.clone()));
-				sendEventToListeners(StreamAppReport.SENT_REQUEST, toRequest.clone(),host); //di pa ak sure kun diin ini dapat
+				sendEventToListeners(StreamAppReporter.SENT_REQUEST, toRequest.clone(),host); //di pa ak sure kun diin ini dapat
 			}
 		}
 		
@@ -584,7 +584,7 @@ public class WatcherAppV3 extends StreamingApplication{
 		}
 		if (!toRequest.isEmpty()){
 			sendRequest(host,otherNode, toRequest);
-			sendEventToListeners(StreamAppReport.SENT_REQUEST, toRequest ,host); //di pa ak sure kun diin ini dapat
+			sendEventToListeners(StreamAppReporter.SENT_REQUEST, toRequest ,host); //di pa ak sure kun diin ini dapat
 		}
 	}
 
@@ -738,7 +738,7 @@ public class WatcherAppV3 extends StreamingApplication{
 						}
 						else{
 							if (currSize < transSize){
-								sendEventToListeners(StreamAppReport.SIZE_ADJUSTED, null, host);
+								sendEventToListeners(StreamAppReporter.SIZE_ADJUSTED, null, host);
 							}
 							break;
 						}
@@ -807,7 +807,7 @@ public class WatcherAppV3 extends StreamingApplication{
 						fragment.setStartPosition(start);
 						fragment.setEndPosition(end);
 						sendTransFragment(host, to, fragment);
-						sendEventToListeners(StreamAppReport.SIZE_ADJUSTED, null, host);
+						sendEventToListeners(StreamAppReporter.SIZE_ADJUSTED, null, host);
 					}
 					else if (bundled.size()==1){ //limit trans level == 2 chunks fragmented
 						sendChunk(props.getChunk(bundled.get(0)), host, to);
@@ -839,7 +839,7 @@ public class WatcherAppV3 extends StreamingApplication{
 		m.addProperty(TVProphetRouterV2.MESSAGE_WEIGHT, 2);
 		host.createNewMessage(m);
 			
-		sendEventToListeners(StreamAppReport.SENT_CHUNK, chunk, host);
+		sendEventToListeners(StreamAppReporter.SENT_CHUNK, chunk, host);
 	}
 
 	private void sendIndexFragment(DTNHost host, DTNHost to, Fragment frag) {
@@ -856,7 +856,7 @@ public class WatcherAppV3 extends StreamingApplication{
 		m.addProperty(TVProphetRouterV2.MESSAGE_WEIGHT, 2);
 		host.createNewMessage(m);
 
-		sendEventToListeners(StreamAppReport.SENT_INDEX_FRAGMENT, null, host);
+		sendEventToListeners(StreamAppReporter.SENT_INDEX_FRAGMENT, null, host);
 //		sendEventToListeners(FRAGMENT_DELIVERED, null, host);
 		
 		System.out.println( host+ " transmission preds: " + ((TVProphetRouterV2) host.getRouter()).getTransmissionPreds(to));
@@ -887,7 +887,7 @@ public class WatcherAppV3 extends StreamingApplication{
 		System.out.println(host + " frag size: " + frag.getSize());
 		
 //		sendEventToListeners(FRAGMENT_DELIVERED, null, host);
-		sendEventToListeners(StreamAppReport.SENT_TRANS_FRAGMENT, null, host);
+		sendEventToListeners(StreamAppReporter.SENT_TRANS_FRAGMENT, null, host);
 	}
 	
 	
@@ -955,7 +955,7 @@ public class WatcherAppV3 extends StreamingApplication{
 			System.out.println(" rand sending response to " + to);
 			sendResponse(host, to, true);
 			unchoked.set(ctr,to);
-			sendEventToListeners(StreamAppReport.UNCHOKED, unchoked, host);
+			sendEventToListeners(StreamAppReporter.UNCHOKED, unchoked, host);
 			interestedNeighbors.remove(to); //remove from interestedNeighbors since granted
 		}
 	}

@@ -1,7 +1,3 @@
-/applications/
-/core/
-/fragmentation/
-/gui/
 /input/
 /interfaces/
 /movement/
@@ -11,3 +7,5 @@
 /test/
 /ui/
 /util/
+/de/
+/writer/

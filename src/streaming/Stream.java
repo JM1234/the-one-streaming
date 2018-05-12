@@ -16,7 +16,6 @@ import core.Message;
  */
 public class Stream {
 	
-	
 	private static int chunkNo=0000;
 	public boolean isStreaming = true;
 

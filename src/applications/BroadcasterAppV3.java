@@ -18,7 +18,7 @@ import core.Settings;
 import core.SimClock;
 import fragmentation.Fragment;
 import fragmentation.SADFragmentation;
-import report.StreamAppReport;
+import report.StreamAppReporter;
 import routing.TVProphetRouterV2;
 import streaming.Stream;
 import streaming.StreamChunk;
@@ -147,7 +147,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 			//generate chunks here
 			if (curTime - stream.getTimeLastStream() >= Stream.getStreamInterval()){ //for every interval
 				stream.generateChunks(getStreamID(), sadf.getCurrIndex());
-				sendEventToListeners(StreamAppReport.CHUNK_CREATED, null, host);
+				sendEventToListeners(StreamAppReporter.CHUNK_CREATED, null, host);
 				updateHello(host);
 				
 				System.out.println("Generated chunk " + stream.getLatestChunk().getChunkID() + "Fragment: " + stream.getLatestChunk().getFragmentIndex());
@@ -155,7 +155,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 					int sIndex = sadf.getCurrIndex() * SADFragmentation.NO_OF_CHUNKS_PER_FRAG;
 					sadf.createFragment(new ArrayList(stream.getChunks().subList(sIndex, sIndex+SADFragmentation.NO_OF_CHUNKS_PER_FRAG)));
 					sadf.getFragment(sadf.getCurrIndex()-1).setIndexComplete();
-					sendEventToListeners(StreamAppReport.FRAGMENT_CREATED, null, host);
+					sendEventToListeners(StreamAppReporter.FRAGMENT_CREATED, null, host);
 				}
 			}
 		}
@@ -205,8 +205,8 @@ public class BroadcasterAppV3 extends StreamingApplication{
 			}
 			
 			lastChokeInterval = curTime;
-			sendEventToListeners(StreamAppReport.UNCHOKED, unchoked.clone(), host);
-			sendEventToListeners(StreamAppReport.INTERESTED, recognized.clone(), host);
+			sendEventToListeners(StreamAppReporter.UNCHOKED, unchoked.clone(), host);
+			sendEventToListeners(StreamAppReporter.INTERESTED, recognized.clone(), host);
 //			System.out.println("Interested Nodes Now: " + recognized + " Unchoked Now: " + unchoked);
 		}
 	}
@@ -382,10 +382,8 @@ public class BroadcasterAppV3 extends StreamingApplication{
 			bundled.clear();
 			
 			if (sadf.doesExist(currFrag) && sadf.getFragment(currFrag).isComplete()){ //if diri pa complete an index level, cannot send transmission level
-				
 				long fIndex = sadf.getFragment(currFrag).getFirstChunkID();
 				long eIndex = sadf.getFragment(currFrag).getEndChunk();
-				
 				System.out.println(host + " fragment exists " + currFrag);
 				
 				if (request.contains(fIndex) && request.contains(eIndex) && //for full index request
@@ -404,6 +402,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 							request.removeAll(request.subList(request.indexOf(fIndex), request.indexOf(eIndex)+1));
 						}
 				}
+				
 				else{
 					System.out.println("Trans level requested");
 					long prevChunk= rChunk;
@@ -425,7 +424,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 						}
 						else{
 							if (currSize > transSize){
-								sendEventToListeners(StreamAppReport.SIZE_ADJUSTED, null, host);
+								sendEventToListeners(StreamAppReporter.SIZE_ADJUSTED, null, host);
 							}
 //							break;
 						}
@@ -446,6 +445,9 @@ public class BroadcasterAppV3 extends StreamingApplication{
 					else if (bundled.size()==1){ //limit trans level == 2 chunks fragmented
 						sendChunk(stream.getChunk(bundled.get(0)), host, msg.getFrom());
 					}
+					else{
+						sendChunk(stream.getChunk(rChunk), host, msg.getFrom());
+					}
 				}
 			}
 			
@@ -460,7 +462,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	 * called if total chunks to send is greater than translevel
 	 */
 	private void subFragment(DTNHost host, DTNHost to, ArrayList<StreamChunk> bundle, int currFrag){
-		sendEventToListeners(StreamAppReport.SIZE_ADJUSTED, null, host);
+		sendEventToListeners(StreamAppReporter.SIZE_ADJUSTED, null, host);
 		ArrayList<Long> toSend = new ArrayList<Long>();
 		
 		double transSize = 	getTransSize(host, to);
@@ -488,7 +490,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 				}
 				else{
 					if (currSize > transSize){
-						sendEventToListeners(StreamAppReport.SIZE_ADJUSTED, null, host);
+						sendEventToListeners(StreamAppReporter.SIZE_ADJUSTED, null, host);
 					}
 //					break;
 				}
@@ -533,8 +535,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		m.addProperty(TVProphetRouterV2.MESSAGE_WEIGHT, 2);
 		host.createNewMessage(m);
 
-		sendEventToListeners(StreamAppReport.SENT_CHUNK, chunk, host);
-		System.out.println(host + " chunk size: " + m.getSize());
+		sendEventToListeners(StreamAppReporter.SENT_CHUNK, chunk, host);
 	}
 	
 	private void sendIndexFragment(DTNHost host, DTNHost to, Fragment frag) {
@@ -551,7 +552,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		m.addProperty(TVProphetRouterV2.MESSAGE_WEIGHT, 2);
 		host.createNewMessage(m);
 
-		sendEventToListeners(StreamAppReport.SENT_INDEX_FRAGMENT, null, host);
+		sendEventToListeners(StreamAppReporter.SENT_INDEX_FRAGMENT, null, host);
 		
 		System.out.println(host + " frag size: " + m.getSize());
 	}
@@ -579,7 +580,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		System.out.println(host + " trans frag size: " + frag.getSize());
 		
 //		sendEventToListeners(FRAGMENT_DELIVERED, null, host);
-		sendEventToListeners(StreamAppReport.SENT_TRANS_FRAGMENT, null, host);
+		sendEventToListeners(StreamAppReporter.SENT_TRANS_FRAGMENT, null, host);
 	}
 	
 	/*
@@ -599,7 +600,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		if (ctr<4 && !unchoked.contains(to)){
 			sendResponse(host, to, true);
 			unchoked.set(ctr,to);
-			sendEventToListeners(StreamAppReport.UNCHOKED, unchoked, host);
+			sendEventToListeners(StreamAppReporter.UNCHOKED, unchoked, host);
 //			System.out.println(host +" ADDED TO UNCHOKED: "+ to);
 			interestedNeighbors.remove(to); //remove from interestedNeighbors since granted
 		}
