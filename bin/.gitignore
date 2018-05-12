@@ -1,11 +1,2 @@
-/input/
-/interfaces/
-/movement/
-/report/
-/routing/
-/streaming/
-/test/
-/ui/
-/util/
-/de/
-/writer/
+
+/.gitignore
