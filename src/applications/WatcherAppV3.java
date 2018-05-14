@@ -45,17 +45,12 @@ public class WatcherAppV3 extends StreamingApplication{
 	
 	private StreamProperties props; ////////properties of current stream channel. what i received, etc.
 //	private Message broadcastMsg;
-	private int urgentRequest=0;
-	private Message m; //temp urgent msg
 	private boolean isListener=false;
 	
-	private double lastTimeRequested = 0;
-	private boolean isFirst=true;
 	private double lastChokeInterval = 0;
 	private double lastOptimalInterval=0;
 	private int maximumRequestPerNode;
-	private int bufferring = 0;
-	private boolean stalled=true;
+	private double streamStartTime;
 	
 	private HashMap<DTNHost, ArrayList<Long>> neighborData;
 	private HashMap<DTNHost, ArrayList<Long>> availableNeighbors; //neighbors that we can request from
@@ -110,8 +105,7 @@ public class WatcherAppV3 extends StreamingApplication{
 			
 			if (msg_type.equals(BROADCAST_LIVE)){
 				System.out.println(host +" Received a broadcast." + msg.getFrom());
-//				String id = APP_TYPE+":register" + SimClock.getIntTime() + "-" +host.getAddress();
-				
+
 				if (!isWatching && watcherType==1){
 					isWatching=true;
 					status = WAITING;
@@ -121,12 +115,11 @@ public class WatcherAppV3 extends StreamingApplication{
 					String streamID=(String) msg.getProperty("streamID");
 					props.setStreamID(streamID);
 					props.setStartTime(timeStarted);
-//					props.setStartTime(SimClock.getIntTime());
-
+					
+					streamStartTime = SimClock.getTime() + PREBUFFER;
 				}
 				
 				///for uninterested watcher, just save
-//				broadcastMsg = msg.replicate();
 				broadcasterAddress = (DTNHost) msg.getProperty("source");
 				System.out.println(" broadcaster address: " + broadcasterAddress);
 				lastChokeInterval = SimClock.getTime();
@@ -393,26 +386,27 @@ public class WatcherAppV3 extends StreamingApplication{
 		}catch(NullPointerException e){}
 		
 		try{
-			if (isWatching && (curTime-this.lastTimePlayed >= Stream.getStreamInterval())){
-//				System.out.println("++++++++++++++MUST BE PLAYING +++++++++++++++++");
-				if(props.isReady(props.getNext())){ // && !stalled){ //if interrupted, wait for 10 seconds before playing again
+			if (isWatching && (curTime-this.lastTimePlayed >= Stream.getStreamInterval()) && curTime>=streamStartTime){
+				System.out.println("++++++++++++++MUST BE PLAYING +++++++++++++++++");
+				
+				if (props.isBufferReady(props.getNext()) && !props.isReady(props.getNext())){
+					System.out.println(" Skipped chunk " + props.getNext());
+					props.skipNext();
+					sendEventToListeners(StreamAppReporter.SKIPPED_CHUNK, null, host);
+				}
+
+				if(props.isReady(props.getNext())){
 					props.playNext();
 					status = PLAYING;
 					this.lastTimePlayed = curTime;
-//					System.out.println(host + " playing: " + props.getPlaying() + " time: "+lastTimePlayed);
-//					if (props.getPlaying() == 1) {
-						sendEventToListeners(StreamAppReporter.LAST_PLAYED, lastTimePlayed, host);
-//					}
+					sendEventToListeners(StreamAppReporter.LAST_PLAYED, lastTimePlayed, host);
 				}
-				else { //if (status==PLAYING){
+				else {
 					//hope for the best na aaruon utro ini na missing
 					status = WAITING;
 					sendEventToListeners(StreamAppReporter.INTERRUPTED, null, host);
-					
-//					//send request here again if request is expired. because last chunk requested did not arrive
-
 				}
-//				System.out.println("+++++++++++++++++++++++++++++++++++++++++++++");
+				System.out.println("+++++++++++++++++++++++++++++++++++++++++++++");
 			}
 			
 		}catch(NullPointerException e){
@@ -545,6 +539,10 @@ public class WatcherAppV3 extends StreamingApplication{
 	 * Evaluates what we should get from available neighbors.
 	 */
 	private void evaluateRequest(DTNHost host, Message msg){
+		if (props.getBuffermap().isEmpty() && chunkRequest.isEmpty() && status==WAITING){
+			sendEventToListeners(StreamAppReporter.FIRST_TIME_REQUESTED, SimClock.getTime(), host);
+		}
+		
 		requestFromNeighbors(host,msg.getFrom());
 	}
 	
@@ -556,7 +554,7 @@ public class WatcherAppV3 extends StreamingApplication{
 		
 		ArrayList<Long> toRequest = new ArrayList<>();
 		
-		this.maximumRequestPerNode = MAXIMUM_PENDING_REQUEST/availableNeighbors.size(); //be sure what really happens with this.
+		maximumRequestPerNode = MAXIMUM_PENDING_REQUEST/availableNeighbors.size(); //be sure what really happens with this.
 		ArrayList<Long> otherAvailable = new ArrayList (availableNeighbors.get(otherNode));
 		
 		sendEventToListeners("hostname", otherNode, host);

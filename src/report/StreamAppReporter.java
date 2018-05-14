@@ -46,7 +46,7 @@ public class StreamAppReporter extends Report implements ApplicationListener{
 	public static final String SENT_TRANS_FRAGMENT = "sentTransFragment";
 	public static final String SENT_CHUNK = "sentChunk";
 	public static final String FRAGMENT_CREATED = "fragmentCreated";
-
+	public static final String SKIPPED_CHUNK = "skippedChunk";
 	
 	private HashMap<DTNHost, NodeProperties> nodeRecord = new HashMap<DTNHost, NodeProperties>();
 	private int createdChunks=0;
@@ -73,11 +73,16 @@ public class StreamAppReporter extends Report implements ApplicationListener{
 			nodeProps.setTimeStartedPlaying(time);
 		}
 		else if (event.equalsIgnoreCase(LAST_PLAYED)){
+			
+			if (nodeProps.getTimeLastPlayed() == -1){
+				nodeProps.setTimeStartedPlaying(getSimTime());
+			}
+			
 			double time=(double) params;
 			nodeProps.setTimeLastPlayed(time);
 		}
 		else if (event.equalsIgnoreCase(INTERRUPTED)){
-			int ctr = nodeProps.getNrofTimesInterrupted()+1;
+			double ctr = nodeProps.getNrofTimesInterrupted()+1;
 			nodeProps.setNrofTimesInterrupted(ctr);
 		}
 		else if (event.equalsIgnoreCase(RECEIVED_CHUNK)){
@@ -131,6 +136,9 @@ public class StreamAppReporter extends Report implements ApplicationListener{
 		}
 		else if (event.equalsIgnoreCase(FRAGMENT_CREATED)){
 			nodeProps.incNrOfFragmentsCreated();
+		}
+		else if (event.equalsIgnoreCase(SKIPPED_CHUNK)){
+			nodeProps.incNrOfChunksSkipped();
 		}
 		nodeRecord.put(host, nodeProps);
 	}
@@ -203,13 +211,14 @@ public class StreamAppReporter extends Report implements ApplicationListener{
 	public void done(){
 		WriteExcel test = new WriteExcel();
 		
-		String outputFile = "/home/jejejanz/janeil_workspace/the-one-streaming/reports/Experiments-DTNStreaming/trial.xls";
+		String outputFile = "C:/Users/janz/git/the-one-streaming/reports/DTNStreaming-Experiments/Experiment1/withbuffer.xls";
 		test.setOutputFile(outputFile);
 	    try {
 	    	  test.write(nodeRecord);
 		} catch (WriteException | IOException e) {
 			e.printStackTrace();
 		}
+	    
         System.out.println("Please check the result file under " + outputFile);
 	}
 	

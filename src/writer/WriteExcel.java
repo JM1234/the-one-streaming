@@ -124,11 +124,11 @@ public class WriteExcel {
         	addDouble(sheet, 3, column, nProps.getTimeFirstChunkReceived());
         	addDouble(sheet, 4, column, nProps.getTimeStartedPlaying());
         	addDouble(sheet, 5, column, nProps.getTimeLastPlayed());
-        	addInteger(sheet, 6, column, nProps.getNrofTimesInterrupted());
-        	addInteger(sheet, 7, column, nProps.getNrofChunksReceived());
-        	addInteger(sheet, 8, column, nProps.getNrofDuplicateChunks());
-        	addInteger(sheet, 9, column, (int)nProps.getAck());
-//        	addDouble(sheet, 10, column, nProps.getLastChunkReceived());
+        	addLong(sheet, 6, column, nProps.getAck());
+        	addDouble(sheet, 7, column, nProps.getLastChunkReceived());
+        	addDouble(sheet, 8, column, nProps.getNrofTimesInterrupted()/100);
+        	addInteger(sheet, 9, column, nProps.getNrofChunksReceived());
+        	addInteger(sheet, 10, column, nProps.getNrofDuplicateChunks());
         	addInteger(sheet, 11, column, nProps.getNrofTimesRequested());
         	addInteger(sheet, 12, column, nProps.getNrofDuplicateRequest());
         	addInteger(sheet, 13, column, nProps.getNrOfTimesSentIndex());
@@ -156,8 +156,15 @@ public class WriteExcel {
         sheet.addCell(number);
     }
     
+    private void addLong(WritableSheet sheet, int column, int row,
+            long value) throws WriteException, RowsExceededException {
+        Number number;
+        number = new Number(column, row, value, times);
+        sheet.addCell(number);
+    }
+    
     private void addDouble(WritableSheet sheet, int column, int row,
-            Double value) throws WriteException, RowsExceededException {
+            double value) throws WriteException, RowsExceededException {
         Number number;
         number = new Number(column, row, value, times);
         sheet.addCell(number);

@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.TreeMap;
 
+import applications.WatcherAppV3;
 import fragmentation.Fragment;
 
 public class StreamProperties {
@@ -106,6 +107,10 @@ public class StreamProperties {
 		ArrayList<StreamChunk> coll = new ArrayList<StreamChunk> (receivedChunks.values());
 		return coll;
 	}
+	
+	public void skipNext(){
+		playing++;
+	}
 
 	public StreamChunk getChunk(long id){
 		return receivedChunks.get(id);
@@ -135,5 +140,16 @@ public class StreamProperties {
 				return chunk;
 		}
 		return null;
+	}
+	
+	public boolean isBufferReady(long id){
+		int ctr=0;
+		
+		for (long toPlay = id+1; toPlay<=receivedChunks.lastKey() && ctr< WatcherAppV3.PREBUFFER/2 ; toPlay++, ctr++){
+			if (!receivedChunks.containsKey(toPlay)){
+				break;
+			}
+		}
+		return (ctr==(WatcherAppV3.PREBUFFER/2)? true:false);
 	}
 }

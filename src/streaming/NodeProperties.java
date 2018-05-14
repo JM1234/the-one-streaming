@@ -7,18 +7,19 @@ import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.Map.Entry;
+import java.util.NoSuchElementException;
 
 import core.DTNHost;
 import core.SimClock;
 
 public class NodeProperties {
 
-	private double timeBroadcastReceived=0;
-	private double timeStartedPlaying=0;
-	private double timeLastPlayed=0;
-	private double timeFirstRequested=0;
-	private double timeFirstChunkReceived=0;
-	private int nrofTimesInterrupted=0;
+	private double timeBroadcastReceived=-1;
+	private double timeStartedPlaying=-1;
+	private double timeLastPlayed=-1;
+	private double timeFirstRequested=-1;
+	private double timeFirstChunkReceived=-1;
+	private double nrofTimesInterrupted=0;
 	private int nrofDuplicateChunks=0;
 	private int nrofDuplicateRequest=0;
 	private int nrofTimesRequested=0;
@@ -26,19 +27,18 @@ public class NodeProperties {
 	private int nrofTimesSentTrans=0;
 	private int nrofTimesSentChunk=0;
 	private int nrofFragmentsCreated=0;
+	private int nrOfChunksSkipped=0;
+	
 	private TreeMap<Long, Double> chunksReceived= new TreeMap<Long, Double>();;
 	private LinkedHashMap<Double, ArrayList<DTNHost>> unchoked = new LinkedHashMap<Double, ArrayList<DTNHost>>();
 	private LinkedHashMap<Double, ArrayList<DTNHost>> interested = new LinkedHashMap<Double, ArrayList<DTNHost>>();
 	private LinkedHashMap<Double,ArrayList<DTNHost>> availableH = new LinkedHashMap<Double,ArrayList<DTNHost>>();
 	private	HashMap<Long, Double> requested = new HashMap<Long, Double>();
+	private TreeMap<Long, Double> chunkWaitTime = new TreeMap<Long, Double>();
+	public HashMap<DTNHost, ArrayList<Long>> toSearch = new HashMap<DTNHost, ArrayList<Long>>();
+
 	private long ack;
 	private int sizeAdjustedCount=0;
-	private TreeMap<Long, Double> chunkWaitTime = new TreeMap<Long, Double>();
-	
-//	public ArrayList<DTNHost> hostNames = new ArrayList<DTNHost>();
-//	public ArrayList<ArrayList<Long>> toSearch =  new ArrayList<ArrayList<Long>>();
-
-	public HashMap<DTNHost, ArrayList<Long>> toSearch = new HashMap<DTNHost, ArrayList<Long>>();
 	
 	public void addChunk(long chunk){
 		chunksReceived.put(chunk, SimClock.getTime());
@@ -87,7 +87,7 @@ public class NodeProperties {
 		this.nrofDuplicateRequest=nrofDuplicateRequest;
 	}
 	
-	public void setNrofTimesInterrupted(int nrofTimesInterrupted){
+	public void setNrofTimesInterrupted(double nrofTimesInterrupted){
 		this.nrofTimesInterrupted=nrofTimesInterrupted;
 	}
 
@@ -123,7 +123,7 @@ public class NodeProperties {
 		return nrofDuplicateRequest;
 	}
 
-	public int getNrofTimesInterrupted(){
+	public double getNrofTimesInterrupted(){
 		return nrofTimesInterrupted;
 	}
 	
@@ -222,4 +222,20 @@ public class NodeProperties {
 		return nrofFragmentsCreated;
 	}
 	
+	public void incNrOfChunksSkipped(){
+		nrOfChunksSkipped++;
+	}
+	
+	public int getNrOfChunksSkipped(){
+		return nrOfChunksSkipped;
+	}
+	
+	public long getLastChunkReceived(){
+		try{
+			return chunksReceived.lastKey();
+		}catch(NoSuchElementException e){
+			return -1;
+		}
+		
+	}
 }
