@@ -19,8 +19,9 @@ public class Stream {
 	private int chunkNo=0000;
 	public boolean isStreaming = true;
 
-	private static int stream_interval;
-	private static int accumChunkSize =0;
+	private int streamInterval;
+	private int accumChunkSize =0;
+	private int byterate;
 
 	private LinkedHashMap<Long, StreamChunk> streamSet;
 	private HashMap<DTNHost, Integer> listener;
@@ -33,12 +34,17 @@ public class Stream {
 	private String streamID;
 	
 	//variable for limitTime. randomize variable on how long the live stream is gonna last
-	public Stream(String streamID) {
+	public Stream(String streamID, int streamInterval, int byterate) {
 		this.streamID = streamID;
-
-		Stream.stream_interval = StreamChunk.getDuration();
+		this.byterate = byterate;
+		
+		this.streamInterval = streamInterval;
 		streamSet= new LinkedHashMap<Long,StreamChunk>() ;
 		listener = new HashMap<DTNHost, Integer>();
+	}
+	
+	public int getStreamInterval(){
+		return streamInterval;
 	}
 	
 	public void startLiveStream(){
@@ -59,7 +65,7 @@ public class Stream {
 		//create chunks
 		long chunkID = generateChunkID(fileID, chunkNo++);
 		StreamChunk chunk = new StreamChunk(id, chunkID);
-		chunk.setSize(StreamChunk.m480p);
+		chunk.setSize(byterate);
 		chunk.setFragmentIndex(fID);
 		streamSet.put(chunkID, chunk);
 		latestChunk = chunk; 
@@ -109,7 +115,7 @@ public class Stream {
 			StreamChunk chunk = streamSet.get(key);
 			
 			double stime = chunk.getCreationTime();
-			if ((stime<=time) && time<stime+stream_interval)
+			if ((stime<=time) && time<stime+streamInterval)
 				return chunk;
 		}
 		return null;
@@ -122,22 +128,7 @@ public class Stream {
 	public double getTimeLastStream(){
 		return timeLastStream;
 	}
-	
-//	public ArrayList<Long> getChunks(){
-//		ArrayList<Long> cId = new ArrayList<Long>();
-//		
-//		for(StreamChunk values: streamSet.values()){
-//			cId.add(values.getChunkID());
-//		}
-////		Collections.sort(cId);
-//		return cId;
-//	}
-	
-	public static int getStreamInterval(){
-		return stream_interval;
-	}
 
-	
 	///used by broadcaster to maintain record of what it has sent as buffermap
 	public int getLastUpdate(DTNHost host){
 		return listener.get(host);
@@ -147,7 +138,7 @@ public class Stream {
 		listener.put(host, lastIndex);
 	}
 	
-	public int getNoOfChunks(){ //noofchunks
+	public int getNoOfChunks(){ 
 		return streamSet.size();
 	}
 
@@ -162,6 +153,10 @@ public class Stream {
 			ids.add(c.getChunkID());
 		}
 		return ids;
+	}
+	
+	public int getByterate(){
+		return byterate;
 	}
 }
 

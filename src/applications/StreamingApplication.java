@@ -50,7 +50,7 @@ public abstract class StreamingApplication extends Application{
 	public static final String RECHOKE_INTERVAL = "rechokeInterval";
 	public static final String OPTIMISTIC_UNCHOKE_INTERVAL = "optimisticUnchokeInterval";
 	public static final String CHUNKS_PER_FRAG = "noOfChunksPerFrag";
-	public static final String BITRATE = "bitrate";
+	public static final String BYTERATE = "byterate";
 	public static final String DURATION_PER_CHUNK = "durationPerChunk"; //seconds only
 	
 	public static final int SIMPLE_MSG_SIZE = 5;
@@ -67,9 +67,6 @@ public abstract class StreamingApplication extends Application{
 	protected HashMap<DTNHost, ArrayList<Long>> helloSent; //nodes we sent hello to
 	protected int rechokeInterval;
 	protected int optimisticUnchokeInterval;
-	protected int noOfChunksPerFrag=0; //default=0, no fragmentation
-	protected int bitrate; //in bytes
-	protected int durationPerChunk;
 	
 	public StreamingApplication(Settings s){
 
@@ -79,9 +76,6 @@ public abstract class StreamingApplication extends Application{
 		
 		rechokeInterval = s.getInt(RECHOKE_INTERVAL);
 		optimisticUnchokeInterval = s.getInt(OPTIMISTIC_UNCHOKE_INTERVAL);
-		noOfChunksPerFrag = s.getInt(CHUNKS_PER_FRAG);
-		bitrate = s.getInt(BITRATE);
-		durationPerChunk = s.getInt(DURATION_PER_CHUNK);
 		
 		helloSent = new HashMap<DTNHost, ArrayList<Long>>();
 		chunkCount = new TreeMap<Long, Integer>();
@@ -237,4 +231,5 @@ public abstract class StreamingApplication extends Application{
     		unchoked.set(index, value); // if in unchoked, remove from list of unchoked
     	}catch(ArrayIndexOutOfBoundsException e){} 
     }
+  
 }

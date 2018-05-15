@@ -17,7 +17,7 @@ public class StreamChunk{
 	private static int duration=1;  //seconds per chunk
 	
 	//specific video properties
-	private static double byterate = m480p; //in bytes per second
+	private static double byterate; //in bytes per second
 	private int framerate;
 	
 	private String fileID;

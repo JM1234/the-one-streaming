@@ -210,7 +210,6 @@ public class TVProphetRouterV2 extends ActiveRouter {
 
 	/** updates transmission predictions */
 	private void updateTransmissionPreds(DTNHost host, DTNHost otherHost){
-		
 		try{
 			double timeDiff = (SimClock.getTime() - lastEncounterTime.get(otherHost)) / secondsInTimeUnit;	
 			if (timeDiff == 0 && transmissionPreds.containsKey(otherHost)) {

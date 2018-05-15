@@ -9,7 +9,6 @@ import streaming.StreamChunk;
 public class SADFragmentation {
 	
 	// equated to per chunk size and index level size
-	public static final int NO_OF_CHUNKS_PER_FRAG = 200;
 	public static final int INDEX_LEVEL=1;
 	public static final int TRANS_LEVEL=2;
 
@@ -18,6 +17,7 @@ public class SADFragmentation {
 	 * wifidirect: 32000 kBps = 250Mbps
 	 */
 	private int id=0;
+	private int noOfChunksPerFrag;
 
 	private HashMap<Integer, Fragment> fragments;
 	
@@ -31,9 +31,18 @@ public class SADFragmentation {
 	
 	public void createFragment( int id, ArrayList<StreamChunk> chunks){ //mainly used by watcher 
 		fragments.put(id, new Fragment(id, chunks));
-		if (chunks.size() == SADFragmentation.NO_OF_CHUNKS_PER_FRAG){
+		if (chunks.size() == noOfChunksPerFrag){
 			fragments.get(id).setIndexComplete();
 		}
+	}
+	
+	public void setNoOfChunksPerFrag(int noOfChunksPerFrag){
+		this.noOfChunksPerFrag=noOfChunksPerFrag;
+		System.out.println( "@sadf::: " + noOfChunksPerFrag);
+	}
+	
+	public int getNoOfChunksPerFrag(){
+		return noOfChunksPerFrag;
 	}
 	
 //	public int getFragSize(int id){
@@ -69,8 +78,8 @@ public class SADFragmentation {
 	}
 
 	public void initTransLevelFrag(int id){
-		ArrayList<StreamChunk> temp = new ArrayList<StreamChunk>(NO_OF_CHUNKS_PER_FRAG);
-		for (int i=0; i<NO_OF_CHUNKS_PER_FRAG; i++){
+		ArrayList<StreamChunk> temp = new ArrayList<StreamChunk>(noOfChunksPerFrag);
+		for (int i=0; i<noOfChunksPerFrag; i++){
 			temp.add(null);
 		}
 		fragments.put(id, new Fragment(id, temp));
@@ -78,9 +87,5 @@ public class SADFragmentation {
 	
 	public void addChunkToFragment(int id, int pos, StreamChunk c){ //used by watcher. for adding transmission level chunks
 		fragments.get(id).updateBundle(pos, c);
-	}
-	
-	public void getBitrate(){
-		
 	}
 }

@@ -37,10 +37,20 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	
 	private double lastChokeInterval = 0;
 	private double lastOptimalInterval =0;
+	private int noOfChunksPerFrag=0; //default=0, no fragmentation
+	private int byterate; //bitrate in bytes
+	private int durationPerChunk;
 	
 	public BroadcasterAppV3(Settings s) {
 		super(s);
+		
+		noOfChunksPerFrag = s.getInt(CHUNKS_PER_FRAG);
+		byterate = s.getInt(BYTERATE);
+		durationPerChunk = s.getInt(DURATION_PER_CHUNK);
+		
 		sadf = new SADFragmentation();
+		sadf.setNoOfChunksPerFrag(noOfChunksPerFrag);
+		System.out.println( " noofchunksperfrag: " + sadf.getNoOfChunksPerFrag());
 //		r=new Random();
 		sTime = 0;	//s.getDouble("streamTime") * r.nextDouble(); //time to start broadcasting
 		initUnchoke();
@@ -51,10 +61,11 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		
 		this.streamID=a.getStreamID();
 		this.noOfChunksPerFrag = a.getNumberOfChunksPerFrag();
-		this.bitrate = a.getBitrate();
+		this.byterate = a.getByterate();
 		this.durationPerChunk = a.getDurationPerChunk();
 		
 		sadf = new SADFragmentation();
+		sadf.setNoOfChunksPerFrag(noOfChunksPerFrag);
 		sTime = a.getSTime();
 		initUnchoke();
 	}
@@ -68,6 +79,8 @@ public class BroadcasterAppV3 extends StreamingApplication{
 				String msg_type = (String) msg.getProperty("msg_type");
 				
 				if (msg_type.equalsIgnoreCase(HELLO)){
+					System.out.println(host + " received hello from " +msg.getFrom());
+					
 					long otherAck = (long) msg.getProperty("ack");
 					int otherStatus = (int) msg.getProperty("status");
 					ArrayList<Long> otherBuffermap = (ArrayList<Long>) msg.getProperty("buffermap");
@@ -91,8 +104,9 @@ public class BroadcasterAppV3 extends StreamingApplication{
 				}
 				
 				else if (msg_type.equalsIgnoreCase(BROADCAST_REQUEST)){ //evaluate here if fragment or chunk it isesend
-
-					if (noOfChunksPerFrag == 0 ){
+					System.out.println(host + " received request from " + msg.getFrom());
+					
+					if (sadf.getNoOfChunksPerFrag() == 0 ){
 						sendWithoutFrag(host, msg);
 					}
 					else{
@@ -101,11 +115,15 @@ public class BroadcasterAppV3 extends StreamingApplication{
 				}
 				
 				else if (msg_type.equals(INTERESTED)){
+					System.out.println(host + " received interested from " + msg.getFrom());
+					
 					interestedNeighbors.put(msg.getFrom(), (int) msg.getCreationTime());
 					evaluateResponse(host, msg.getFrom());	
 				}
 				
 				else if (msg_type.equalsIgnoreCase(UNINTERESTED)){
+					System.out.println(host + " received uninterested from " + msg.getFrom());
+					
 					interestedNeighbors.remove(msg.getFrom());
 					if (unchoked.contains(msg.getFrom())){
 						updateUnchoked(unchoked.indexOf(msg.getFrom()), null);
@@ -128,23 +146,29 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		
 		if (broadcasted){
 			//generate chunks here
-			if (curTime - stream.getTimeLastStream() >= Stream.getStreamInterval()){ //for every interval
+			if (curTime - stream.getTimeLastStream() >= stream.getStreamInterval()){ //for every interval
 				stream.generateChunks(getStreamID(), sadf.getCurrIndex());
 				sendEventToListeners(StreamAppReporter.CHUNK_CREATED, null, host);
 				updateHello(host);
 				
-//				System.out.println("Generated chunk " + stream.getLatestChunk().getChunkID() + "Fragment: " + stream.getLatestChunk().getFragmentIndex());
+				System.out.println("Generated chunk " + stream.getLatestChunk().getChunkID() + "Fragment: " + stream.getLatestChunk().getFragmentIndex());
 			
 				//create fragments here
-				if ((stream.getLatestChunk().getChunkID()+1) % SADFragmentation.NO_OF_CHUNKS_PER_FRAG == 0){
-					int sIndex = sadf.getCurrIndex() * SADFragmentation.NO_OF_CHUNKS_PER_FRAG;
-					sadf.createFragment(new ArrayList(stream.getChunks().subList(sIndex,sIndex+SADFragmentation.NO_OF_CHUNKS_PER_FRAG)));
-					try{
-						sadf.getFragment(sadf.getCurrIndex()-1).setIndexComplete();
-					}catch(NullPointerException e){
-						sadf.getFragment(0).setIndexComplete();						
+				System.out.println(" ::::" + sadf.getNoOfChunksPerFrag());
+				if (sadf.getNoOfChunksPerFrag()>0){ 
+					if((stream.getLatestChunk().getChunkID()+1) % sadf.getNoOfChunksPerFrag() == 0){
+			
+						int sIndex = sadf.getCurrIndex() * sadf.getNoOfChunksPerFrag();
+						sadf.createFragment(new ArrayList(stream.getChunks().subList(sIndex,sIndex+sadf.getNoOfChunksPerFrag())));
+						try{
+							sadf.getFragment(sadf.getCurrIndex()-1).setIndexComplete();
+							System.out.println(host + " created fragment " + (sadf.getCurrIndex()-1));
+						}catch(NullPointerException e){
+							sadf.getFragment(0).setIndexComplete();			
+							System.out.println(host + " created fragment " + (sadf.getCurrIndex()-1));
+						}
+						sendEventToListeners(StreamAppReporter.FRAGMENT_CREATED, null, host);
 					}
-					sendEventToListeners(StreamAppReporter.FRAGMENT_CREATED, null, host);
 				}
 			}
 		}
@@ -167,7 +191,8 @@ public class BroadcasterAppV3 extends StreamingApplication{
 						}
 					}
 					recognized = sortNeighborsByBandwidth(recognized);
-							
+					System.out.println(host + " interested nodes: " +recognized);
+					
 					unchokeTop3(host, recognized);
 					prevUnchokedList.removeAll(unchoked.subList(0, 3)); //remove an api kanina na diri na api yana ha top3
 					
@@ -194,14 +219,16 @@ public class BroadcasterAppV3 extends StreamingApplication{
 			
 			lastChokeInterval = curTime;
 			sendEventToListeners(StreamAppReporter.UNCHOKED, unchoked.clone(), host);
+			System.out.println(host + " unchoked: " + unchoked);
 			sendEventToListeners(StreamAppReporter.INTERESTED, recognized.clone(), host);
+			System.out.println(host + " recognized: " + recognized);
 		}
 	}
 	
 	public void startBroadcast(DTNHost host){
-		stream= new Stream("streamID");
+		stream= new Stream("streamID", durationPerChunk, byterate);
 		stream.startLiveStream();
-
+		
 		lastChokeInterval = SimClock.getTime();
 		lastOptimalInterval = SimClock.getTime();
 		super.sendEventToListeners(BROADCAST_LIVE, null, host);
@@ -215,6 +242,9 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		m.addProperty("msg_type", BROADCAST_LIVE);
 		m.addProperty("streamID", getStreamID());
 		m.addProperty("stream_name", "tempstream");
+		m.addProperty(BYTERATE, byterate);
+		m.addProperty(DURATION_PER_CHUNK, durationPerChunk);
+		m.addProperty(CHUNKS_PER_FRAG, noOfChunksPerFrag);
 		m.addProperty(TVProphetRouterV2.MESSAGE_WEIGHT, 1);
 		m.addProperty("time_started", SimClock.getIntTime());
 		m.addProperty("source", host);
@@ -607,16 +637,16 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	public double getSTime(){
 		return sTime;
 	}
-	
+	  
 	private int getDurationPerChunk() {
 		return durationPerChunk;
 	}
 
-	private int getBitrate() {
-		return bitrate;
+	private int getByterate() {
+		return byterate;
 	}
 
 	private int getNumberOfChunksPerFrag() {
-		return durationPerChunk;
+		return noOfChunksPerFrag;
 	}
 }

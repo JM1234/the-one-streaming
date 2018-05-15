@@ -31,16 +31,11 @@ public class WatcherAppV3 extends StreamingApplication{
 	
 	public static final int PLAYING = 1;
 	public static final int WAITING = 0;
-	public static final int MAXIMUM_PENDING_REQUEST=SADFragmentation.NO_OF_CHUNKS_PER_FRAG*2 + 50;
 
-	private int		seed = 0;
-	private int		destMin=0;
-	private int		destMax=1;
-	
 	private int 	status =-1;
 	private int 	watcherType; //1 if listener. 0 if just a hop
-	private int maximumRequestPerNode;
 	private int maxRequestPerNode;
+	private int maxPendingRequest;
 	private int waitingThreshold;
 	private int prebuffer;
 	private double lastTimePlayed=0;
@@ -70,10 +65,12 @@ public class WatcherAppV3 extends StreamingApplication{
 		props = new StreamProperties("");
 		neighborData = new HashMap<DTNHost, ArrayList<Long>>();
 		availableNeighbors = new HashMap<DTNHost, ArrayList<Long>>();
+		toFragment = new HashMap<Integer, ArrayList<StreamChunk>>();
 		chunkRequest = new HashMap<Long, Double>();
 		listOfRequested = new ArrayList<Long>();
+		
 		sadf = new SADFragmentation();
-		toFragment = new HashMap<Integer, ArrayList<StreamChunk>>();
+	
 		initUnchoke();
 	}
 
@@ -83,17 +80,24 @@ public class WatcherAppV3 extends StreamingApplication{
 		this.watcherType = a.getWatcherType();
 		this.waitingThreshold = a.getWaitingThreshold();
 		this.prebuffer = a.getPrebuffer();
-		
+		this.maxPendingRequest = a.getMaxPendingRequest();
+				
 		props = new StreamProperties("");
 		neighborData = new HashMap<DTNHost, ArrayList<Long>>();
 		availableNeighbors = new HashMap<DTNHost, ArrayList<Long>>();
+		toFragment = new HashMap<Integer, ArrayList<StreamChunk>>();
 		chunkRequest = new HashMap<Long, Double>();
 		listOfRequested = new ArrayList<Long>();
+		
 		sadf = new SADFragmentation();
-		toFragment = new HashMap<Integer, ArrayList<StreamChunk>>();
+		
 		initUnchoke();
 	}
 	
+	private int getMaxPendingRequest() {
+		return maxPendingRequest;
+	}
+
 	private int getPrebuffer() {
 		return prebuffer;
 	}
@@ -112,17 +116,23 @@ public class WatcherAppV3 extends StreamingApplication{
 			String msg_type = (String) msg.getProperty("msg_type");
 			
 			if (msg_type.equals(BROADCAST_LIVE)){
-
+				System.out.println(host + " received broadcast_live " );
 				if (!isWatching && watcherType==1){
 					isWatching=true;
 					status = WAITING;
-
-					int timeStarted = (int) msg.getProperty("time_started");
 					
 					String streamID=(String) msg.getProperty("streamID");
+					int timeStarted = (int) msg.getProperty("time_started");
+					int byterate = (int) msg.getProperty(BYTERATE);
+					int durationPerChunk = (int) msg.getProperty(DURATION_PER_CHUNK);
+					int noOfChunksPerFrag = (int) msg.getProperty(CHUNKS_PER_FRAG);
+					
+					sadf.setNoOfChunksPerFrag(noOfChunksPerFrag);					
+					props.initProps(durationPerChunk, byterate);
 					props.setStreamID(streamID);
 					props.setStartTime(timeStarted);
 					
+					this.maxPendingRequest = (noOfChunksPerFrag*2)+50;
 					streamStartTime = SimClock.getTime() +prebuffer;
 				}
 				
@@ -134,6 +144,7 @@ public class WatcherAppV3 extends StreamingApplication{
 			}
 			
 			else if (msg_type.equals(HELLO)){
+				System.out.println(host  + " received hello " + msg.getFrom());
 				
 				int otherStatus = (int) msg.getProperty("status");
 				long otherAck = (long) msg.getProperty("ack");
@@ -174,63 +185,85 @@ public class WatcherAppV3 extends StreamingApplication{
 			}
 			
 			else if(msg_type.equalsIgnoreCase(BROADCAST_CHUNK_SENT)){ //received chunks				
+				System.out.println(host  + " received chunk ");
+				
 				StreamChunk chunk = (StreamChunk) msg.getProperty("chunk");
 				int fragId = chunk.getFragmentIndex();
 				
 				//for fragmenting chunks that are individually received
 				if (props.getChunk(chunk.getChunkID())==null){
 					
-					//save on toFragment
-					if (toFragment.containsKey(fragId)){
-						toFragment.get(chunk.getFragmentIndex()).add(chunk);
-					}
-					else{
-						ArrayList<StreamChunk> temp  = new ArrayList<StreamChunk>();
-						temp.add(chunk);
-						toFragment.put(fragId, temp);
-					}
-					
-					if (!sadf.doesExist(fragId)){
-						sadf.initTransLevelFrag(fragId);
-					}
-					//check if we should include it on fragment now
-					if (sadf.doesExist(fragId) && !sadf.getFragment(fragId).isComplete()){
-						ArrayList<StreamChunk> hold = toFragment.get(fragId);
-						for (StreamChunk c: hold){
-							sadf.addChunkToFragment(fragId, ((int)c.getChunkID())%SADFragmentation.NO_OF_CHUNKS_PER_FRAG, c);
+					System.out.println(" noOfChuksPerfrag " + sadf.getNoOfChunksPerFrag());
+					if (sadf.getNoOfChunksPerFrag() > 0 ){
+						System.out.println("@toFramgment");
+						//save on toFragment
+						if (toFragment.containsKey(fragId)){
+							toFragment.get(chunk.getFragmentIndex()).add(chunk);
+						}
+						else{
+							ArrayList<StreamChunk> temp  = new ArrayList<StreamChunk>();
+							temp.add(chunk);
+							toFragment.put(fragId, temp);
 						}
 						
-						if (sadf.getFragment(fragId).isComplete()){
-							sendEventToListeners(StreamAppReporter.FRAGMENT_CREATED, null, host);
+						if (!sadf.doesExist(fragId)){
+							sadf.initTransLevelFrag(fragId);
 						}
-						
-						toFragment.remove(fragId);
-					}		
+						//check if we should include it on fragment now
+						if (sadf.doesExist(fragId) && !sadf.getFragment(fragId).isComplete()){
+							ArrayList<StreamChunk> hold = toFragment.get(fragId);
+							for (StreamChunk c: hold){
+								sadf.addChunkToFragment(fragId, ((int)c.getChunkID())%sadf.getNoOfChunksPerFrag(), c);
+							}
+							
+							if (sadf.getFragment(fragId).isComplete()){
+								sendEventToListeners(StreamAppReporter.FRAGMENT_CREATED, null, host);
+							}
+							
+							toFragment.remove(fragId);
+						}		
+					}
 				}
 				
 				interpretChunks(host, chunk, msg.getFrom());
 			}
 			
-			else if(msg_type.equalsIgnoreCase(BROADCAST_REQUEST)){
-//
-//				long chunkNeeded = (long) msg.getProperty("chunk");
-//				
-//				if (props.getChunk(chunkNeeded)!=null){
-//					sendChunk(props.getChunk(chunkNeeded), host, msg.getFrom()); //simply sending. no buffer limit yet
-//				}
+			else if(msg_type.equalsIgnoreCase(BROADCAST_FRAGMENT_SENT)){
+				Fragment frag = (Fragment) msg.getProperty("fragment");
+				int fragType = (int) msg.getProperty("frag_type");
+				System.out.println(host + " received fragment " + " type: " + fragType);
 				
-//				evaluateToSend(host, msg);
-				sendWithoutFrag(host, msg);
+				decodeFragment(host, frag, fragType, msg.getFrom());
+			}
+			
+			else if(msg_type.equalsIgnoreCase(BROADCAST_REQUEST)){
+				System.out.println(host + " received request ");
+				if (sadf.getNoOfChunksPerFrag() == 0 ){
+					sendWithoutFrag(host, msg);
+				}
+				else{
+					evaluateToSend(host, msg);
+				}
 			}
 
 			else if (msg_type.equals(INTERESTED)){ 	//evaluate response if choke or unchoke
-			
+				System.out.println(host + " received interested " + msg.getFrom());
 				interestedNeighbors.put(msg.getFrom(), (int) msg.getCreationTime());
 				evaluateResponse(host, msg.getFrom());
 			}
 			
+			
+			else if (msg_type.equalsIgnoreCase(UNINTERESTED)){
+				System.out.println(host + " received uninterested " + msg.getFrom());
+				interestedNeighbors.remove(msg.getFrom());
+				if (unchoked.contains(msg.getFrom())){
+					unchoked.set(unchoked.indexOf(msg.getFrom()), null);
+				}
+			}
+			
 			else if (msg_type.equals(UNCHOKE)){
-
+				System.out.println(host +" received unchoke from " + msg.getFrom());
+				
 				ArrayList<Long> temp = (ArrayList<Long>) msg.getProperty("buffermap");
 				updateChunksAvailable(msg.getFrom(), temp);
 				availableNeighbors.put(msg.getFrom(), (ArrayList<Long>) neighborData.get(msg.getFrom()).clone()); //add this to available neighbors
@@ -241,25 +274,13 @@ public class WatcherAppV3 extends StreamingApplication{
 			}
 
 			else if (msg_type.equals(CHOKE)){
+				System.out.println(host + " received choke from " + msg.getFrom());
 				//remove didi an neighbors na dati nag unchoke ha at. diri na hya api ha mga dapat aruan
 				availableNeighbors.remove(msg.getFrom());
 				ArrayList<DTNHost> availableH = new ArrayList<DTNHost>(availableNeighbors.keySet());
 				sendEventToListeners(StreamAppReporter.UPDATE_AVAILABLE_NEIGHBORS, availableH, host);
 			}
-			
-			else if (msg_type.equalsIgnoreCase(UNINTERESTED)){
-				interestedNeighbors.remove(msg.getFrom());
-				if (unchoked.contains(msg.getFrom())){
-					unchoked.set(unchoked.indexOf(msg.getFrom()), null);
-				}
-			}
-			
-			else if(msg_type.equalsIgnoreCase(BROADCAST_FRAGMENT_SENT)){
-				Fragment frag = (Fragment) msg.getProperty("fragment");
-				int fragType = (int) msg.getProperty("frag_type");
-				
-				decodeFragment(host, frag, fragType, msg.getFrom());
-			}
+
 		}
 		return msg;
 	}
@@ -316,11 +337,12 @@ public class WatcherAppV3 extends StreamingApplication{
 		}
 
 		chunkRequest.remove(chunk.getChunkID()); //remove granted requests
-		if (chunkRequest.size() <= MAXIMUM_PENDING_REQUEST/2 && !availableNeighbors.isEmpty()){
+		if (chunkRequest.size() <= maxPendingRequest/2 && !availableNeighbors.isEmpty()){
 			timeToAskNew(host);
 		}
 		
-		if ( (chunk.getCreationTime() <= props.getStartTime())  && (props.getStartTime() < (chunk.getCreationTime() + Stream.getStreamInterval()))
+		//receivedFirstPlayable
+		if ( (chunk.getCreationTime() <= props.getStartTime())  && (props.getStartTime() < (chunk.getCreationTime() + props.getStreamInterval()))
 			&& props.getAck()==-1){
 			props.setChunkStart(chunk.getChunkID());
 			status = PLAYING;
@@ -344,17 +366,17 @@ public class WatcherAppV3 extends StreamingApplication{
 				DTNHost otherNode = c.getOtherNode(host);
 				if (c.isUp() && !hasHelloed(otherNode)){
 					sendBuffermap(host, otherNode, props.getBuffermap()); //say hello to new connections
-//					sentHello.add(otherNode);
 					helloSent.put(otherNode, props.getBuffermap());
 				}
 			}
 		}catch(NullPointerException e){}
 		
 		try{
-			if (isWatching && (curTime-this.lastTimePlayed >= Stream.getStreamInterval()) && curTime>=streamStartTime){
+			if (isWatching && (curTime-this.lastTimePlayed >= props.getStreamInterval()) && curTime>=streamStartTime){
 				
-				if (props.isBufferReady(props.getNext()) && !props.isReady(props.getNext())){
+				if (prebuffer>0 && props.isBufferReady(props.getNext()) && !props.isReady(props.getNext())){
 					sendEventToListeners(StreamAppReporter.SKIPPED_CHUNK, props.getNext(), host);
+					System.out.println(host + " skipped chunk: " + props.getNext());
 					props.skipNext();
 				}
 
@@ -363,11 +385,13 @@ public class WatcherAppV3 extends StreamingApplication{
 					status = PLAYING;
 					this.lastTimePlayed = curTime;
 					sendEventToListeners(StreamAppReporter.LAST_PLAYED, lastTimePlayed, host);
+					System.out.println(host + " playing: " + props.getPlaying());
 				}
 				else {
 					//hope for the best na aaruon utro ini na missing
 					status = WAITING;
 					sendEventToListeners(StreamAppReporter.INTERRUPTED, null, host);
+					System.out.println(host+ " waiting: " + props.getNext());
 				}
 			}
 			
@@ -375,14 +399,14 @@ public class WatcherAppV3 extends StreamingApplication{
 		}catch(ArrayIndexOutOfBoundsException i){ }
 		
 		//for maintaining -- choking and unchoking
-		if (curTime-lastChokeInterval >=5){
+		if (curTime-lastChokeInterval >= rechokeInterval){
 			ArrayList<DTNHost> recognized =  new ArrayList<DTNHost>(interestedNeighbors.keySet());
 			
 			if (hasNewInterested()){
 				
 				ArrayList<DTNHost> prevUnchokedList = (ArrayList<DTNHost>) unchoked.clone();
 				
-				if (curTime-lastOptimalInterval >= 15){ //optimistic interval = every 15 seconds
+				if (curTime-lastOptimalInterval >= optimisticUnchokeInterval){ //optimistic interval = every 15 seconds
 					recognized.removeAll(unchoked); //remove first an nagrequest bisan unchoked na kanina [pa]. to avoid duplicates
 					recognized.addAll(unchoked); 
 					
@@ -392,7 +416,8 @@ public class WatcherAppV3 extends StreamingApplication{
 						}
 					}
 					recognized = sortNeighborsByBandwidth(recognized);
-							
+					System.out.println(host + " interested nodes: " +recognized);
+					
 					unchokeTop3(host, recognized);
 					prevUnchokedList.removeAll(unchoked.subList(0, 3)); //remove an api kanina na diri na api yana ha top3
 					
@@ -419,11 +444,13 @@ public class WatcherAppV3 extends StreamingApplication{
 			
 			lastChokeInterval = curTime;
 			sendEventToListeners(StreamAppReporter.UNCHOKED, unchoked.clone(), host);
+			System.out.println(host + " unchoked: " + unchoked);
 			sendEventToListeners(StreamAppReporter.INTERESTED, recognized.clone(), host);
+			System.out.println(host + " recognized: " + recognized);
 		}
 
 	}
-
+	
 	public void sendBroadcast(DTNHost host, DTNHost to, DTNHost broadcasterAddress){
 		String id = APP_TYPE + ":broadcast" + SimClock.getIntTime() + "-" + host.getAddress() + "-" + to;
 		
@@ -432,24 +459,26 @@ public class WatcherAppV3 extends StreamingApplication{
 		m.addProperty("msg_type", BROADCAST_LIVE);
 		m.addProperty("streamID", getStreamID());
 		m.addProperty("stream_name", "tempstream");
+		m.addProperty(BYTERATE, props.getByterate());
+		m.addProperty(DURATION_PER_CHUNK, props.getStreamInterval());
+		m.addProperty(CHUNKS_PER_FRAG, sadf.getNoOfChunksPerFrag());
 		m.addProperty(TVProphetRouterV2.MESSAGE_WEIGHT, 1);
-		m.addProperty("time_started", SimClock.getIntTime());
+		m.addProperty("time_started", props.getStartTime() - prebuffer);
 		m.addProperty("source", broadcasterAddress);
 		m.setAppID(APP_ID);
 		host.createNewMessage(m); //must override, meaning start a broadcast that a stream is initiated from this peer
-		//////set response size
 		
 		lastChokeInterval = SimClock.getTime();
 		lastOptimalInterval = SimClock.getTime();
 		super.sendEventToListeners(BROADCAST_LIVE, null, host);
 	}
-	
+
 	private void timeToAskNew(DTNHost host){
 		
 		ArrayList<DTNHost> hosts = new ArrayList<DTNHost>(availableNeighbors.keySet());
 		Collections.sort(hosts, StreamingApplication.BandwidthComparator);
 		
-		int maxRequestPerNode = MAXIMUM_PENDING_REQUEST/hosts.size();
+		int maxRequestPerNode = maxPendingRequest/hosts.size();
 		ArrayList<Long> toRequest = new ArrayList<Long>();
 		
 		for (DTNHost to: hosts){
@@ -459,7 +488,7 @@ public class WatcherAppV3 extends StreamingApplication{
 			aChunks.removeAll(listOfRequested);
 			toRequest.clear();
 			
-			for (int i=0; toRequest.size()<maxRequestPerNode && i<aChunks.size() && chunkRequest.size()<MAXIMUM_PENDING_REQUEST; i++){
+			for (int i=0; toRequest.size()<maxRequestPerNode && i<aChunks.size() && chunkRequest.size()<maxPendingRequest; i++){
 				long chunkId = aChunks.get(i);
 				
 				toRequest.add(chunkId);
@@ -468,7 +497,7 @@ public class WatcherAppV3 extends StreamingApplication{
 				double expiry = (((chunkId*StreamChunk.getDuration()) - (props.getPlaying()*StreamChunk.getDuration()))+
 						SimClock.getTime()) - waitingThreshold;
 				if (expiry <= SimClock.getTime() ){
-					expiry = SimClock.getTime() + prebuffer;
+					expiry = SimClock.getTime() + waitingThreshold;
 				}
 				chunkRequest.put(chunkId, expiry); //add to requested chunks
 				listOfRequested.add(chunkId);
@@ -508,7 +537,7 @@ public class WatcherAppV3 extends StreamingApplication{
 	private void requestFromNeighbors(DTNHost host, DTNHost otherNode){ 
 		ArrayList<Long> toRequest = new ArrayList<>();
 		
-		maximumRequestPerNode = MAXIMUM_PENDING_REQUEST/availableNeighbors.size(); //be sure what really happens with this.
+		maxRequestPerNode = maxPendingRequest/availableNeighbors.size(); //be sure what really happens with this.
 		ArrayList<Long> otherAvailable = new ArrayList (availableNeighbors.get(otherNode));
 		
 		sendEventToListeners("hostname", otherNode, host);
@@ -520,14 +549,14 @@ public class WatcherAppV3 extends StreamingApplication{
 		
 		int ctr=0;
 		for (long chunk: otherAvailable){
-			if (chunkRequest.size()<MAXIMUM_PENDING_REQUEST && ctr<maximumRequestPerNode){ 
+			if (chunkRequest.size()<maxPendingRequest && ctr<maxRequestPerNode){ 
 				toRequest.add(chunk);
 
 				//expiry = 10 seconds before this will be played
 				double expiry = (((chunk*StreamChunk.getDuration()) - (props.getPlaying()*StreamChunk.getDuration()))+
 						SimClock.getTime()) - waitingThreshold;
 				if (expiry <= SimClock.getTime() ){
-					expiry = SimClock.getTime() + prebuffer;
+					expiry = SimClock.getTime() + waitingThreshold;
 				}
 				chunkRequest.put(chunk, expiry); //add to requested chunks
 				listOfRequested.add(chunk);
@@ -541,6 +570,7 @@ public class WatcherAppV3 extends StreamingApplication{
 	}
 
 	private void sendBuffermap(DTNHost host, DTNHost to, ArrayList<Long> buffermap){  // ArrayList<Fragment> fragments){
+		System.out.println(host + " sent hello to "+to);
 		String id = APP_TYPE+ ":hello_" + SimClock.getTime() +"-" +host.getAddress() +"-" + to; // + SimClock.getIntTime();
 		
 		Message m = new Message(host, to, id, BUFFERMAP_SIZE); //buffermap size must be defined.
@@ -600,11 +630,9 @@ public class WatcherAppV3 extends StreamingApplication{
 			}
 		}
 	}
-	
 
 	private void sendWithoutFrag(DTNHost host, Message msg){
 		ArrayList<Long> request = (ArrayList<Long>) msg.getProperty("chunk");
-		ArrayList<Long> bundled = new ArrayList<Long>();
 		
 		for (long rChunk: request){
 			sendChunk(props.getChunk(rChunk), host, msg.getFrom());
@@ -624,22 +652,22 @@ public class WatcherAppV3 extends StreamingApplication{
 			bundled.clear();
 			
 			if (sadf.doesExist(currFrag) && sadf.getFragment(currFrag).isComplete()){ //if diri pa complete an index level, cannot send transmission level
-				
 				long fIndex = sadf.getFragment(currFrag).getFirstChunkID();
 				long eIndex = sadf.getFragment(currFrag).getEndChunk();
 				
 				if (request.contains(fIndex) && request.contains(eIndex) && //for full index request
 					request.subList(request.indexOf(fIndex), request.indexOf(eIndex)+1).size() == sadf.getFragment(currFrag).getNoOfChunks()){
 						
-						if (isGreaterThanTrans(host, msg.getFrom(), sadf.getFragment(currFrag).getSize())){
-							//fragment with respect to trans size
-							subFragment(host, msg.getFrom(), sadf.getFragment(currFrag).getBundled(), currFrag);
+						if (isGreaterThanTrans(host, msg.getFrom(), sadf.getFragment(currFrag).getSize())){ //fragment with respect to trans size
+							subFragment(host, msg.getFrom(), (ArrayList<StreamChunk>) sadf.getFragment(currFrag).getBundled().clone(), currFrag);
+							request.removeAll(request.subList(request.indexOf(fIndex), request.indexOf(eIndex)+1));
 						}
 						else{
 							sendIndexFragment(host, msg.getFrom(), sadf.getFragment(currFrag));
 							request.removeAll(request.subList(request.indexOf(fIndex), request.indexOf(eIndex)+1));
 						}
 				}
+				
 				else{
 					long prevChunk= rChunk;
 					Iterator<Long> iter = request.iterator();
@@ -659,15 +687,13 @@ public class WatcherAppV3 extends StreamingApplication{
 							iter.remove();
 						}
 						else{
-							if (currSize < transSize){
+							if (currSize > transSize){
 								sendEventToListeners(StreamAppReporter.SIZE_ADJUSTED, null, host);
 							}
-							break;
 						}
 					}
 					
 					if (!bundled.isEmpty() && bundled.size()>1){ //nasend fragment bisan usa la it sulod
-						//if tapos na, send this part of request_response 
 						int start = sadf.getFragment(currFrag).indexOf(bundled.get(0));
 						int end = sadf.getFragment(currFrag).indexOf(bundled.get(bundled.size()-1));
 						
@@ -679,6 +705,9 @@ public class WatcherAppV3 extends StreamingApplication{
 					}
 					else if (bundled.size()==1){ //limit trans level == 2 chunks fragmented
 						sendChunk(props.getChunk(bundled.get(0)), host, msg.getFrom());
+					}
+					else{
+						sendChunk(props.getChunk(rChunk), host, msg.getFrom());
 					}
 				}
 			}
@@ -694,8 +723,8 @@ public class WatcherAppV3 extends StreamingApplication{
 	 * called if total chunks to send is greater than translevel
 	 */
 	private void subFragment(DTNHost host, DTNHost to, ArrayList<StreamChunk> bundle, int currFrag){
-		
-		ArrayList<Long> bundled = new ArrayList<Long>();
+		sendEventToListeners(StreamAppReporter.SIZE_ADJUSTED, null, host);
+		ArrayList<Long> toSend = new ArrayList<Long>();
 		
 		double transSize = 	getTransSize(host, to);
 		double byteRate = StreamChunk.getByterate();
@@ -704,36 +733,39 @@ public class WatcherAppV3 extends StreamingApplication{
 		
 		while(!bundle.isEmpty()){
 			Iterator<StreamChunk> iter = bundle.iterator();
-			bundled.clear();
+			toSend.clear();
 			prevChunk = bundle.get(0).getChunkID();
 			
 			while(iter.hasNext()){
 				long currChunk = iter.next().getChunkID();
-				currSize = ((bundled.size()+1)*byteRate) + HEADER_SIZE;
-			
-				if(currFrag == props.getChunk(currChunk).getFragmentIndex() && (bundled.isEmpty() || currChunk==prevChunk+1)
+				currSize = ((toSend.size()+1)*byteRate) + HEADER_SIZE;
+
+				if(currFrag == props.getChunk(currChunk).getFragmentIndex() && (toSend.isEmpty() || currChunk==prevChunk+1)
 						&& currSize < transSize){
-					bundled.add(currChunk);
+					toSend.add(currChunk);
 					prevChunk = currChunk;
 					iter.remove();
 				}
 				else{
-					if (!bundled.isEmpty() && bundled.size()>1){ //nasend fragment bisan usa la it sulod
-						//if tapos na, send this part of request_response 
-						int start = sadf.getFragment(currFrag).indexOf(bundled.get(0));
-						int end = sadf.getFragment(currFrag).indexOf(bundled.get(bundled.size()-1));
-						
-						ArrayList<StreamChunk> subFrag= new ArrayList<StreamChunk> (sadf.getFragment(currFrag).getBundled().subList(start, end+1));					
-						Fragment fragment = new Fragment(currFrag, subFrag);
-						fragment.setStartPosition(start);
-						fragment.setEndPosition(end);
-						sendTransFragment(host, to, fragment);
+					if (currSize > transSize){
 						sendEventToListeners(StreamAppReporter.SIZE_ADJUSTED, null, host);
 					}
-					else if (bundled.size()==1){ //limit trans level == 2 chunks fragmented
-						sendChunk(props.getChunk(bundled.get(0)), host, to);
-					}
 				}
+			}
+			
+			if (!toSend.isEmpty() && toSend.size()>1){ //nasend fragment bisan usa la it sulod
+				//if tapos na, send this part of request_response 
+				int start = sadf.getFragment(currFrag).indexOf(toSend.get(0));
+				int end = sadf.getFragment(currFrag).indexOf(toSend.get(toSend.size()-1));
+				
+				ArrayList<StreamChunk> subFrag= new ArrayList<StreamChunk> (sadf.getFragment(currFrag).getBundled().subList(start, end+1));					
+				Fragment fragment = new Fragment(currFrag, subFrag);
+				fragment.setStartPosition(start);
+				fragment.setEndPosition(end);
+				sendTransFragment(host, to, fragment);
+			}
+			else if (toSend.size()==1){ //limit trans level == 2 chunks fragmented
+				sendChunk(props.getChunk(toSend.get(0)), host, to);
 			}
 		}
 	}

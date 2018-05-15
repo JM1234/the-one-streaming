@@ -21,11 +21,19 @@ public class StreamProperties {
 	private TreeMap<Long, StreamChunk> receivedChunks;
 	
 	private long ack=-1; //last consecutive sent
-
+	private int byterate;
+	private int durationPerChunk;
+	
 	public StreamProperties(String streamID){
 		this.streamID = streamID;
+		
 		receivedChunks = new TreeMap<Long, StreamChunk>();
 		receivedFragments = new ArrayList<Fragment>();
+	}
+	
+	public void initProps(int durationPerChunk, int byterate){
+		this.byterate = byterate;
+		this.durationPerChunk = durationPerChunk;
 	}
 	
 	public void addChunk(StreamChunk chunk){
@@ -136,7 +144,7 @@ public class StreamProperties {
 			StreamChunk chunk = receivedChunks.get(key);
 			
 			double stime = chunk.getCreationTime();
-			if ((stime<=time) && time<stime+Stream.getStreamInterval())
+			if ((stime<=time) && time<stime+durationPerChunk)
 				return chunk;
 		}
 		return null;
@@ -155,5 +163,13 @@ public class StreamProperties {
 			}
 		}
 		return (ctr==(prebuffer/2)? true:false);
+	}
+
+	public double getStreamInterval() {
+		return durationPerChunk;
+	}
+
+	public int getByterate() {
+		return byterate;
 	}
 }
