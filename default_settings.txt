@@ -72,7 +72,7 @@ Group.speed = 0.3, 0.3
 
 ## Movement model settings
 # seed for movement models' pseudo random number generator (default = 0)
-MovementModel.rngSeed = 10
+MovementModel.rngSeed = [1; 2; 3]
 # World's size for Movement Models without implicit size (width, height; meters)
 MovementModel.worldSize = 1000,1000
 # How long time to move hosts in the world before real simulation

@@ -1,12 +1,10 @@
 package streaming;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.Set;
+import java.util.NoSuchElementException;
 import java.util.TreeMap;
-import java.util.Map.Entry;
 
 import core.DTNHost;
 import core.SimClock;
@@ -18,7 +16,7 @@ public class NodeProperties {
 	private double timeLastPlayed=0;
 	private double timeFirstRequested=0;
 	private double timeFirstChunkReceived=0;
-	private int nrofTimesInterrupted=0;
+	private double nrofTimesInterrupted=0;
 	private int nrofDuplicateChunks=0;
 	private int nrofDuplicateRequest=0;
 	private int nrofTimesRequested=0;
@@ -87,7 +85,7 @@ public class NodeProperties {
 		this.nrofDuplicateRequest=nrofDuplicateRequest;
 	}
 	
-	public void setNrofTimesInterrupted(int nrofTimesInterrupted){
+	public void setNrofTimesInterrupted(double nrofTimesInterrupted){
 		this.nrofTimesInterrupted=nrofTimesInterrupted;
 	}
 
@@ -122,8 +120,7 @@ public class NodeProperties {
 	public int getNrofDuplicateRequest(){
 		return nrofDuplicateRequest;
 	}
-
-	public int getNrofTimesInterrupted(){
+	public double getNrofTimesInterrupted(){
 		return nrofTimesInterrupted;
 	}
 	
@@ -222,4 +219,11 @@ public class NodeProperties {
 		return nrofFragmentsCreated;
 	}
 	
+	public long getLastChunkReceived(){
+		try{
+			return chunksReceived.lastKey();
+		}catch(NoSuchElementException e){
+			return -1;
+		} //exception for broadcaster
+	}
 }

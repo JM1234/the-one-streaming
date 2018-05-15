@@ -16,7 +16,6 @@ import applications.StreamingApplication;
 import core.Application;
 import core.ApplicationListener;
 import core.DTNHost;
-import core.SimClock;
 import jxl.write.WriteException;
 import streaming.NodeProperties;
 import writer.WriteExcel;
@@ -77,7 +76,7 @@ public class StreamAppReporter extends Report implements ApplicationListener{
 			nodeProps.setTimeLastPlayed(time);
 		}
 		else if (event.equalsIgnoreCase(INTERRUPTED)){
-			int ctr = nodeProps.getNrofTimesInterrupted()+1;
+			double ctr = nodeProps.getNrofTimesInterrupted()+1;
 			nodeProps.setNrofTimesInterrupted(ctr);
 		}
 		else if (event.equalsIgnoreCase(RECEIVED_CHUNK)){
@@ -103,15 +102,15 @@ public class StreamAppReporter extends Report implements ApplicationListener{
 		}
 		else if (event.equalsIgnoreCase(UNCHOKED)){
 			ArrayList<DTNHost> unchokedH = (ArrayList<DTNHost>) params;
-			nodeProps.updateUnchoke(SimClock.getTime(), unchokedH);
+			nodeProps.updateUnchoke(getSimTime(), unchokedH);
 		}
 		else if (event.equalsIgnoreCase(INTERESTED)){
 			ArrayList<DTNHost> interestedH = (ArrayList<DTNHost>) params;
-			nodeProps.updateInterested(SimClock.getTime(), interestedH);
+			nodeProps.updateInterested(getSimTime(), interestedH);
 		}
 		else if (event.equals(UPDATE_AVAILABLE_NEIGHBORS)){
 			ArrayList<DTNHost> availableH = (ArrayList<DTNHost>) params;
-			nodeProps.updateAvailable(SimClock.getTime(), availableH);
+			nodeProps.updateAvailable(getSimTime(), availableH);
 		}
 		else if (event.equals(UPDATE_ACK)){
 			long ack = (long) params;
@@ -201,9 +200,10 @@ public class StreamAppReporter extends Report implements ApplicationListener{
 //	}
 	
 	public void done(){
+	
 		WriteExcel test = new WriteExcel();
 		
-		String outputFile = "/home/jejejanz/janeil_workspace/the-one-streaming/reports/Experiments-DTNStreaming/trial.xls";
+		String outputFile = "/home/jejejanz/janeil_workspace/the-one-streaming/reports/Experiments-DTNStreaming/Experiment1/batchrun_trial.xls";
 		test.setOutputFile(outputFile);
 	    try {
 	    	  test.write(nodeRecord);

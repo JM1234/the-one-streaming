@@ -318,7 +318,6 @@ public class WatcherAppV3 extends StreamingApplication{
 //					sadf.addChunkToFragment(currFrag, ((int)c.getChunkID())%SADFragmentation.NO_OF_CHUNKS_PER_FRAG, c);
 //				}
 //				toFragment.remove(currFrag);
-				
 			}
 
 			for (int i=0, pos = frag.getStartPosition(); pos<=frag.getEndPosition(); pos++, i++){
@@ -329,17 +328,12 @@ public class WatcherAppV3 extends StreamingApplication{
 			if (sadf.getFragment(frag.getId()).isComplete()){
 				sendEventToListeners(StreamAppReporter.FRAGMENT_CREATED, null, host);
 			}
-			
-//			for (int i=frag.startPosition(); i<=frag.getEndPosition(); i++){
-//				sadf.addChunkToFragment(currFrag, i, bundle.get(i));
-//				interpretChunks(host, bundle.get(i));
-//			}
 		}
 		
 	}
 
 	private void interpretChunks(DTNHost host, StreamChunk chunk, DTNHost from){
-//		System.out.println(host + " received chunk " + chunk.getChunkID());
+		System.out.println(host + " received chunk " + chunk.getChunkID());
 		if (props.getBuffermap().size()==0){ //first time received
 			sendEventToListeners(StreamAppReporter.FIRST_TIME_RECEIVED, SimClock.getTime(), host);
 		}
@@ -350,7 +344,7 @@ public class WatcherAppV3 extends StreamingApplication{
 			sendEventToListeners(StreamAppReporter.UPDATE_ACK, props.getAck(), host);
 			sendEventToListeners(StreamAppReporter.RECEIVED_CHUNK, chunk.getChunkID(), host);
 			updateHello(host, chunk.getChunkID(), from);
-//			System.out.println(host + " updated:  " + props.getBuffermap());
+			System.out.println(host + " updated:  " + props.getBuffermap());
 		}
 		else{
 			sendEventToListeners(StreamAppReporter.RECEIVED_DUPLICATE, chunk.getChunkID(), host);
@@ -394,25 +388,24 @@ public class WatcherAppV3 extends StreamingApplication{
 		
 		try{
 			if (isWatching && (curTime-this.lastTimePlayed >= Stream.getStreamInterval())){
-//				System.out.println("++++++++++++++MUST BE PLAYING +++++++++++++++++");
+				System.out.println("++++++++++++++MUST BE PLAYING +++++++++++++++++");
 				if(props.isReady(props.getNext())){ // && !stalled){ //if interrupted, wait for 10 seconds before playing again
 					props.playNext();
 					status = PLAYING;
 					this.lastTimePlayed = curTime;
-//					System.out.println(host + " playing: " + props.getPlaying() + " time: "+lastTimePlayed);
-//					if (props.getPlaying() == 1) {
-						sendEventToListeners(StreamAppReporter.LAST_PLAYED, lastTimePlayed, host);
-//					}
+					System.out.println(host + " playing: " + props.getPlaying() + " time: "+lastTimePlayed);
+					sendEventToListeners(StreamAppReporter.LAST_PLAYED, lastTimePlayed, host);
 				}
-				else { //if (status==PLAYING){
+				else { //status==PLAYING){
 					//hope for the best na aaruon utro ini na missing
+					System.out.println(" Waiting for: " + props.getNext());
 					status = WAITING;
 					sendEventToListeners(StreamAppReporter.INTERRUPTED, null, host);
 					
 //					//send request here again if request is expired. because last chunk requested did not arrive
 
 				}
-//				System.out.println("+++++++++++++++++++++++++++++++++++++++++++++");
+				System.out.println("+++++++++++++++++++++++++++++++++++++++++++++");
 			}
 			
 		}catch(NullPointerException e){
