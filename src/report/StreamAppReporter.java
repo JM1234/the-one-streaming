@@ -52,7 +52,7 @@ public class StreamAppReporter extends Report implements ApplicationListener{
 	public static final String FRAGMENT_CREATED = "fragmentCreated";
 	public static final String SKIPPED_CHUNK = "skippedChunk";
 	
-	private static final String excelDir = "/home/jejejanz/janeil_workspace/the-one-streaming/reports/DTNStreaming/Experiment1/nofrag/";
+	private String excelDir = "/home/jejejanz/janeil_workspace/the-one-streaming/";
 	
 	private TreeMap<DTNHost, NodeProperties> nodeRecord = new TreeMap<DTNHost, NodeProperties>();
 	private int createdChunks=0;
@@ -215,11 +215,19 @@ public class StreamAppReporter extends Report implements ApplicationListener{
 		return s.getInt(MovementModel.RNG_SEED);
 	}
 	
+	public String getReportDir(){
+		Settings s = new Settings();
+		return s.getSetting(REPORTDIR_SETTING);
+	}
+	
 	public void done(){
 		WriteExcel test = new WriteExcel();
 	
-		test.setOutputFile(excelDir + getScenarioName() + ".xls");
+		excelDir = excelDir + getReportDir() + getScenarioName() + ".xls";
 		
+		System.out.println(" excelDir: " + excelDir);
+		test.setOutputFile(excelDir); //+ getScenarioName() + ".xls");
+	
 		try {
 			test.init();
 			test.write(nodeRecord, getSeed());

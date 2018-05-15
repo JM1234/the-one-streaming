@@ -50,7 +50,6 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		
 		sadf = new SADFragmentation();
 		sadf.setNoOfChunksPerFrag(noOfChunksPerFrag);
-		System.out.println( " noofchunksperfrag: " + sadf.getNoOfChunksPerFrag());
 //		r=new Random();
 		sTime = 0;	//s.getDouble("streamTime") * r.nextDouble(); //time to start broadcasting
 		initUnchoke();
@@ -154,7 +153,6 @@ public class BroadcasterAppV3 extends StreamingApplication{
 				System.out.println("Generated chunk " + stream.getLatestChunk().getChunkID() + "Fragment: " + stream.getLatestChunk().getFragmentIndex());
 			
 				//create fragments here
-				System.out.println(" ::::" + sadf.getNoOfChunksPerFrag());
 				if (sadf.getNoOfChunksPerFrag()>0){ 
 					if((stream.getLatestChunk().getChunkID()+1) % sadf.getNoOfChunksPerFrag() == 0){
 			
@@ -221,7 +219,6 @@ public class BroadcasterAppV3 extends StreamingApplication{
 			sendEventToListeners(StreamAppReporter.UNCHOKED, unchoked.clone(), host);
 			System.out.println(host + " unchoked: " + unchoked);
 			sendEventToListeners(StreamAppReporter.INTERESTED, recognized.clone(), host);
-			System.out.println(host + " recognized: " + recognized);
 		}
 	}
 	

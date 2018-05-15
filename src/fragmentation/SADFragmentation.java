@@ -38,7 +38,6 @@ public class SADFragmentation {
 	
 	public void setNoOfChunksPerFrag(int noOfChunksPerFrag){
 		this.noOfChunksPerFrag=noOfChunksPerFrag;
-		System.out.println( "@sadf::: " + noOfChunksPerFrag);
 	}
 	
 	public int getNoOfChunksPerFrag(){

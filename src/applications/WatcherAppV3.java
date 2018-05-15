@@ -193,9 +193,7 @@ public class WatcherAppV3 extends StreamingApplication{
 				//for fragmenting chunks that are individually received
 				if (props.getChunk(chunk.getChunkID())==null){
 					
-					System.out.println(" noOfChuksPerfrag " + sadf.getNoOfChunksPerFrag());
 					if (sadf.getNoOfChunksPerFrag() > 0 ){
-						System.out.println("@toFramgment");
 						//save on toFragment
 						if (toFragment.containsKey(fragId)){
 							toFragment.get(chunk.getFragmentIndex()).add(chunk);
@@ -446,7 +444,6 @@ public class WatcherAppV3 extends StreamingApplication{
 			sendEventToListeners(StreamAppReporter.UNCHOKED, unchoked.clone(), host);
 			System.out.println(host + " unchoked: " + unchoked);
 			sendEventToListeners(StreamAppReporter.INTERESTED, recognized.clone(), host);
-			System.out.println(host + " recognized: " + recognized);
 		}
 
 	}
