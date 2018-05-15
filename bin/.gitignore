@@ -1,2 +1,8 @@
 
 /.gitignore
+/applications/
+/fragmentation/
+/report/
+/routing/
+/streaming/
+/writer/
