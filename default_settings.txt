@@ -54,7 +54,7 @@ Group.bufferSize = 5000M
 Group.nrofInterfaces = 1
 Group.interface1 = btInterface
 # Walking speeds
-Group.speed = 0.3, 0.3
+#Group.speed = 0.3, 0.3
 # Message TTL of 300 minutes (5 hours)
 #Group.msgTtl = 300
 #Group.nrofHosts = 3
@@ -72,7 +72,8 @@ Group.speed = 0.3, 0.3
 
 ## Movement model settings
 # seed for movement models' pseudo random number generator (default = 0)
-MovementModel.rngSeed = [1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16;17;18;19;20;21;22;23;24;25;26;27;28;29;30]
+MovementModel.rngSeed = 4
+#[1;2;3;4;5;6;7;8;9;10;11;12;13;14;15;16;17;18;19;20;21;22;23;24;25;26;27;28;29;30]
 # World's size for Movement Models without implicit size (width, height; meters)
 MovementModel.worldSize = 1000,1000
 # How long time to move hosts in the world before real simulation
@@ -91,7 +92,6 @@ Events.nrof = 1
 Events1.hosts = 0,2
 # Message ID prefix
 #Events1.prefix = M
-
 
 ## Reports - all report names have to be valid report classes
 # how many reports to load

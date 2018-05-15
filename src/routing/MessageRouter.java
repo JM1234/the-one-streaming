@@ -48,7 +48,9 @@ public abstract class MessageRouter {
 	 * </UL>
 	 */
 	public static final String SEND_QUEUE_MODE_S = "sendQueue";
-
+	public static  final String MESSAGE_WEIGHT = "messageWeight";
+	
+	
 	/** Setting value for random queue mode */
 	public static final int Q_MODE_RANDOM = 1;
 	/** Setting value for FIFO queue mode */
@@ -556,7 +558,7 @@ public abstract class MessageRouter {
 		case Q_MODE_PRIORITY:
 			Collections.sort(list,
 					new Comparator() {
-				/** Compares two tuples by their messages' creating time */
+				/** Compares two tuples by their messages' weight */
 				public int compare(Object o1, Object o2) {
 					double diff;
 					Message m1, m2;
@@ -573,7 +575,10 @@ public abstract class MessageRouter {
 						throw new SimError("Invalid type of objects in " +
 								"the list");
 					}
-					diff = m1.getCreationTime() - m2.getCreationTime();
+
+					int weight1 = (int) m1.getProperty(MESSAGE_WEIGHT);
+					int weight2 = (int) m2.getProperty(MESSAGE_WEIGHT);
+					diff = weight1- weight2;
 					if (diff == 0) {
 						return 0;
 					}

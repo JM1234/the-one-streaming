@@ -50,7 +50,8 @@ public class StreamAppReporter extends Report implements ApplicationListener{
 	public static final String SENT_TRANS_FRAGMENT = "sentTransFragment";
 	public static final String SENT_CHUNK = "sentChunk";
 	public static final String FRAGMENT_CREATED = "fragmentCreated";
-
+	public static final String SKIPPED_CHUNK = "skippedChunk";
+	
 	private static final String excelDir = "/home/jejejanz/janeil_workspace/the-one-streaming/reports/DTNStreaming/Experiment1/nofrag/";
 	
 	private TreeMap<DTNHost, NodeProperties> nodeRecord = new TreeMap<DTNHost, NodeProperties>();
@@ -136,6 +137,10 @@ public class StreamAppReporter extends Report implements ApplicationListener{
 		}
 		else if (event.equalsIgnoreCase(FRAGMENT_CREATED)){
 			nodeProps.incNrOfFragmentsCreated();
+		}
+		else if (event.equalsIgnoreCase(SKIPPED_CHUNK)){
+			long id = (long) params;
+			nodeProps.addSkippedChunk(id);
 		}
 		nodeRecord.put(host, nodeProps);
 	}

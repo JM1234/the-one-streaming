@@ -58,7 +58,7 @@ public class Stream {
 
 		//create chunks
 		long chunkID = generateChunkID(fileID, chunkNo++);
-		StreamChunk chunk = new StreamChunk(id, chunkID);				
+		StreamChunk chunk = new StreamChunk(id, chunkID);
 		chunk.setSize(StreamChunk.m480p);
 		chunk.setFragmentIndex(fID);
 		streamSet.put(chunkID, chunk);
@@ -69,9 +69,7 @@ public class Stream {
 		}catch(NullPointerException e){
 			timeLastStream= 0;
 		}
-		System.out.println("Generated stream: " +chunk.getChunkID() + " Fragment: "+chunk.getFragmentIndex()
-		+ " Time created: "+ chunk.getCreationTime());
-		
+	
 		accumChunkSize +=chunk.getSize();
 	}
 	
@@ -90,7 +88,6 @@ public class Stream {
 	}
 	
 	public void registerListener(DTNHost host){
-//		System.out.println("New listener: " + host.getAddress());
 		listener.put(host, -1);
 	}
 	

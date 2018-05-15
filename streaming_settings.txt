@@ -9,11 +9,25 @@ streamApp1.destinationRange = 0,50
 streamApp1.streamSize = 1.5M
 streamApp1.streamTime=700
 streamApp1.streamID=9999
+streamApp1.rechokeInterval=5
+streamApp1.optimisticUnchokeInterval=15
+streamApp1.prebuffer=10
+streamApp1.waitingThreshold=7
+streamApp1.noOfChunksPerFrag=200
+streamApp1.bitrate=150
+streamApp1.durationPerChunk=1
 
 streamApp2.type = WatcherAppV3
 streamApp2.destinationRange= 0,50
 streamApp2.streamSize=1.5M
 streamApp2.watcherType=1
+streamApp2.rechokeInterval=5
+streamApp2.optimisticUnchokeInterval=15
+streamApp2.prebuffer=10
+streamApp2.waitingThreshold=7
+streamApp2.noOfChunksPerFrag=200
+streamApp2.bitrate=150
+streamApp2.durationPerChunk=1
 
 #streamApp3.type = WatcherAppV2
 #streamApp3.destinationRange = 0,3
@@ -21,8 +35,8 @@ streamApp2.watcherType=1
 #streamApp3.watcherType=0
 
 Group.nrofApplications = 1
-Group.movementModel = RandomWaypoint
-#Group.movementModel = StationaryMovement
+#Group.movementModel = RandomWaypoint
+Group.movementModel = StationaryMovement
 Group.router = TVProphetRouterV2
 TVProphetRouter.secondsInTimeUnit=1
 Group.bufferSize = 5000M

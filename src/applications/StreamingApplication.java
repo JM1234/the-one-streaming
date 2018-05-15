@@ -30,7 +30,7 @@ public abstract class StreamingApplication extends Application{
 	
 	public static final String APP_ID = "cmsc.janz.StreamingApplication";
 	public static final String APP_TYPE = "dtnlivestreaming";
-	public static final String STREAM_SEED = "seed";
+	
 	public static final String BROADCAST_LIVE = "BROADCAST_LIVE";
 	public static final String BROADCAST_REQUEST = "REQUEST_STREAM";
 	public static final String BROADCAST_CHUNK_SENT = "CHUNK_SENT";
@@ -44,106 +44,78 @@ public abstract class StreamingApplication extends Application{
 	public static final String CHOKE = "CHOKED";
 	public static final String UNCHOKE = "UNCHOKED";
 	
-	public static final String STREAM_DEST_RANGE = "destinationRange";
 	public static final String STREAM_SIZE = "streamSize";
 	public static final String STREAM_ID = "streamID";
 	public static final String STREAM_NAME = "streamName";
+	public static final String RECHOKE_INTERVAL = "rechokeInterval";
+	public static final String OPTIMISTIC_UNCHOKE_INTERVAL = "optimisticUnchokeInterval";
+	public static final String CHUNKS_PER_FRAG = "noOfChunksPerFrag";
+	public static final String BITRATE = "bitrate";
+	public static final String DURATION_PER_CHUNK = "durationPerChunk"; //seconds only
 	
-	public static final int PEDESTRIAN_INDEX_LEVEL_SIZE = 100*60; //bluetooth transmission * average pedestrian connection duration 
-	public static final int VEHICLE_INDEX_LEVEL_SIZE = 100*20;
-	public static final int HELLO_UPDATE = 1;
 	public static final int SIMPLE_MSG_SIZE = 5;
 	public static final int BUFFERMAP_SIZE = 10;
 	public static final int HEADER_SIZE = 56;
 	public static final int INDEX_TYPE = 1;
 	public static final int TRANS_TYPE = 2;
 	
-	private int		seed = 0;
-	private int		destMin=0;
-	private int	    destMax=1;
 	private String	streamID = "9999";
 	
-	private Random	rng;	
-	private TreeMap<Long, Integer> chunkCount;
-//	protected ArrayList<DTNHost> sentHello; //store all chunkids sent on this node
+	private TreeMap<Long, Integer> chunkCount; //for rarest
+	protected ArrayList<DTNHost> unchoked; //nodes that we unchoked
 	protected HashMap<DTNHost, Integer> interestedNeighbors; //nodes that can request from us
-	protected ArrayList<DTNHost> unchoked;
-	protected HashMap<DTNHost, ArrayList<Long>> helloSent;
+	protected HashMap<DTNHost, ArrayList<Long>> helloSent; //nodes we sent hello to
+	protected int rechokeInterval;
+	protected int optimisticUnchokeInterval;
+	protected int noOfChunksPerFrag=0; //default=0, no fragmentation
+	protected int bitrate; //in bytes
+	protected int durationPerChunk;
 	
 	public StreamingApplication(Settings s){
-		
-		if (s.contains(STREAM_DEST_RANGE)){
-			int[] destination = s.getCsvInts(STREAM_DEST_RANGE,2);
-			this.destMin = destination[0];
-			this.destMax = destination[1];
-		}
-		if (s.contains(STREAM_SEED)){
-			this.seed = s.getInt(STREAM_SEED);
-		}
-//		if(s.contains(STREAM_SIZE)){
-//			this.streamSize = s.getInt(STREAM_SIZE); //////////should be set as chunk size
-//		}
+
 		if(s.contains(STREAM_ID)){
 			this.streamID = s.getSetting(STREAM_ID);			
 		}
-//		this.sentHello = new ArrayList<DTNHost>();
-		this.helloSent = new HashMap<DTNHost, ArrayList<Long>>();
+		
+		rechokeInterval = s.getInt(RECHOKE_INTERVAL);
+		optimisticUnchokeInterval = s.getInt(OPTIMISTIC_UNCHOKE_INTERVAL);
+		noOfChunksPerFrag = s.getInt(CHUNKS_PER_FRAG);
+		bitrate = s.getInt(BITRATE);
+		durationPerChunk = s.getInt(DURATION_PER_CHUNK);
+		
+		helloSent = new HashMap<DTNHost, ArrayList<Long>>();
 		chunkCount = new TreeMap<Long, Integer>();
 		interestedNeighbors = new HashMap<DTNHost, Integer>();
 		unchoked = new ArrayList<DTNHost>(4);
 		
-		rng = new Random(this.seed);					
 		super.setAppID(APP_ID);
 	}
 	
 	public StreamingApplication(StreamingApplication a){
 		super(a);
 		
-		this.destMax = a.getDestMax();
-		this.destMin = a.getDestMin();
-		this.seed = a.getSeed();
-//		this.streamSize = a.getStreamSize();
-		this.streamID = a.getStreamID();
-		this.rng = new Random(this.seed);
-//		this.sentHello = new ArrayList<DTNHost>();
-		this.helloSent = new HashMap<DTNHost, ArrayList<Long>>();
+		streamID = a.getStreamID();
+		rechokeInterval = a.getRechokeInterval();
+		optimisticUnchokeInterval = a.getOptimisticUnchokeInterval();
+		
+		helloSent = new HashMap<DTNHost, ArrayList<Long>>();
 		interestedNeighbors = new HashMap<DTNHost, Integer>();
 		chunkCount = new TreeMap<Long, Integer>();
 		unchoked = new ArrayList<DTNHost>(4);
 	}
 
-	protected DTNHost randomHost() {
-
-		int destaddr = 0;
-		if (destMax == destMin) {
-			destaddr = destMin;
-		}
-		destaddr = destMin + rng.nextInt(destMax - destMin);
-		World w = SimScenario.getInstance().getWorld();
-		return w.getNodeByAddress(destaddr);
+	private int getOptimisticUnchokeInterval() {
+		return optimisticUnchokeInterval;
 	}
-	
+
+	private int getRechokeInterval() {
+		return rechokeInterval;
+	}
+
 	private int getIndexSize(TVProphetRouter router, DTNHost otherHost){
 		return (int) router.getIndexSize();
 	}
-
-
-//	public int getStreamSize() {
-//		return streamSize;
-//	}
 	
-	public int getDestMax() {
-		return destMax;
-	}
-	
-	public int getDestMin() {
-		return destMin;
-	}
-
-	public int getSeed() {
-		return seed;
-	}
-
 	public String getStreamID(){
 		return streamID;
 	}
@@ -176,7 +148,6 @@ public abstract class StreamingApplication extends Application{
 			currConnected.add(c.getOtherNode(host));
 		}
 
-//		ArrayList<DTNHost> disconnectedN =  (ArrayList<DTNHost>) sentHello.clone();
 		ArrayList<DTNHost> disconnectedN = new ArrayList<DTNHost>(helloSent.keySet());
 		disconnectedN.removeAll(currConnected);
 
@@ -184,7 +155,6 @@ public abstract class StreamingApplication extends Application{
 			removeBufferedMessages(host, dtnHost);
 			interestedNeighbors.remove(dtnHost); //if it sent an interested message, remove it from the list of interested
 			updateUnchoked(unchoked.indexOf(dtnHost), null); //if it is included among the current list of unchoked  -----------------------feeling ko may something wrong ini
-//			sentHello.remove(sentHello.indexOf(dtnHost));
 			helloSent.remove(dtnHost);
 	    }
 	}
@@ -205,7 +175,6 @@ public abstract class StreamingApplication extends Application{
 	}
 	
 	public boolean hasHelloed(DTNHost host){
-//		return sentHello.contains(host);
 		return helloSent.keySet().contains(host);
 	}
 
@@ -262,16 +231,7 @@ public abstract class StreamingApplication extends Application{
     		return 0;
     	}
 	};
-	
-    private static int getHostSpeed(DTNHost host){
-    	return host.getInterface(0).getTransmitSpeed(host.getInterface(0));
-    }
 
-    private Long getMostPopularChunk(){
-    	System.out.println(chunkCount);
-    	return chunkCount.lastKey();
-    }
-    
     public void updateUnchoked(int index, DTNHost value){
     	try{
     		unchoked.set(index, value); // if in unchoked, remove from list of unchoked

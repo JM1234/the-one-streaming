@@ -26,13 +26,11 @@ public class SADFragmentation {
 	}
 	
 	public void createFragment(ArrayList<StreamChunk> chunks) { //mainly used by broadcaster
-		System.out.println("CREATED FRAGMENT "+ id + " with last chunk: " + chunks.get(chunks.size()-1).getChunkID());
 		fragments.put(id, new Fragment(id++, chunks));
 	}
 	
 	public void createFragment( int id, ArrayList<StreamChunk> chunks){ //mainly used by watcher 
 		fragments.put(id, new Fragment(id, chunks));
-		System.out.println( " created new fragment " + id + " firstchunkid: " + fragments.get(id).getFirstChunkID());
 		if (chunks.size() == SADFragmentation.NO_OF_CHUNKS_PER_FRAG){
 			fragments.get(id).setIndexComplete();
 		}

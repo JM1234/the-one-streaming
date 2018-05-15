@@ -6,13 +6,15 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.TreeMap;
 
+import applications.WatcherAppV3;
 import fragmentation.Fragment;
 
 public class StreamProperties {
 
-	private int playing=-1; //index currently playing
+	private long playing=-1; //index currently playing
 	private double startTime=-1;
 	private long chunkStart=-1;
+	private int prebuffer;
 	
 	private String streamID;
 	private ArrayList<Fragment> receivedFragments;
@@ -37,7 +39,6 @@ public class StreamProperties {
 		while (receivedChunks.containsKey(ack+1)){
 			ack++;
 		}
-//		System.out.println("Now Ack: "+ack);
 	}
 	
 	public long getAck(){
@@ -79,11 +80,11 @@ public class StreamProperties {
 		playing = playing+1;
 	}
 	
-	public int getPlaying(){
+	public long getPlaying(){
 		return playing;
 	}
 	
-	public int getNext(){
+	public long getNext(){
 		return playing+1;
 	}
 	
@@ -105,6 +106,10 @@ public class StreamProperties {
 	public ArrayList<StreamChunk> getReceived(){
 		ArrayList<StreamChunk> coll = new ArrayList<StreamChunk> (receivedChunks.values());
 		return coll;
+	}
+	
+	public void skipNext(){
+		playing++;
 	}
 
 	public StreamChunk getChunk(long id){
@@ -135,5 +140,20 @@ public class StreamProperties {
 				return chunk;
 		}
 		return null;
+	}
+	
+	public void setPrebuffer(int prebuffer){
+		this.prebuffer = prebuffer;
+	}
+	
+	public boolean isBufferReady(long id){
+		int ctr=0;
+		
+		for (long toPlay = id+1; toPlay<=receivedChunks.lastKey() && ctr< prebuffer/2 ; toPlay++, ctr++){
+			if (!receivedChunks.containsKey(toPlay)){
+				break;
+			}
+		}
+		return (ctr==(prebuffer/2)? true:false);
 	}
 }

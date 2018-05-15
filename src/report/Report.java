@@ -82,7 +82,7 @@ public abstract class Report {
 
 		Settings settings = new Settings();
 		scenarioName = settings.valueFillString(settings.getSetting(
-				SimScenario.SCENARIO_NS + "." +	SimScenario.NAME_S + "." + getSeed() ));
+				SimScenario.SCENARIO_NS + "." +	SimScenario.NAME_S ));
 
 		settings = getSettings();
 
@@ -109,7 +109,7 @@ public abstract class Report {
 		}
 
 		if (settings.contains(OUTPUT_SETTING)) {
-			outFileName = settings.getSetting(OUTPUT_SETTING);
+			outFileName = settings.getSetting(OUTPUT_SETTING) ;
 			// fill value place holders in the name
 			outFileName = settings.valueFillString(outFileName);
 		}
@@ -120,7 +120,7 @@ public abstract class Report {
 			if (!outDir.endsWith("/")) {
 				outDir += "/";	// make sure dir ends with directory delimiter
 			}
-			outFileName = outDir + scenarioName +
+			outFileName = outDir + scenarioName + getSeed() +
 				"_" + this.getClass().getSimpleName();
 			if (outputInterval == -1) {
 				outFileName += OUT_SUFFIX; // no intervalled reports

@@ -5,7 +5,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -34,7 +33,6 @@ public class TVProphetRouterV2 extends ActiveRouter {
 
 	/** Prophet router's setting namespace ({@value})*/
 	public static final String PROPHET_NS = "TVProphetRouterV2";
-	public static  final String MESSAGE_WEIGHT = "messageWeight";
 	
 	/**
 	 * Number of seconds in time unit -setting id ({@value}).
@@ -147,7 +145,6 @@ public class TVProphetRouterV2 extends ActiveRouter {
 			endTime = SimClock.getTime();
 			
 			double duration = endTime-timeRecord.get(otherHost);
-			System.out.println(" duration: " +round(duration) + " connection speed: " + (con.getSpeed()/1000) ); //+ "rounded speed: " + round(con.getSpeed()));
 			
 			updateTava(otherHost, round(duration));
 			updateVava(otherHost,con.getSpeed()/1000);
@@ -167,13 +164,7 @@ public class TVProphetRouterV2 extends ActiveRouter {
 	}
 	
 	private void updateTava(DTNHost host, double tCurrent){
-//		double timeDiff = (SimClock.getTime() -  lastEncounterTime.get(host)) /
-//				secondsInTimeUnit;	
-//		
-//		if (timeDiff == 0) {
-//			return;
-//		}
-		
+
 		double tOld;
 		double t;
 		
@@ -184,7 +175,6 @@ public class TVProphetRouterV2 extends ActiveRouter {
 			t = T_OLD;
 		}
 		
-		System.out.println("tCurrent: " + tCurrent + " put @ tava: " + t);
 		tava.put(host, t);
 	}
 	
@@ -199,7 +189,6 @@ public class TVProphetRouterV2 extends ActiveRouter {
 			v = V_OLD;
 		}
 	
-		System.out.println("vCurrent: " + vCurrent + " put @ vava: " + v);
 		vava.put(host, v);
 	}
 	
@@ -214,20 +203,11 @@ public class TVProphetRouterV2 extends ActiveRouter {
 		updateTava(otherHost, duration);
 		updateVava(otherHost, speed/1000);
 
-		System.out.println(" Duration:" + duration + "Speed: " + speed/1000);
-
-//		try{
-		transSize = round((tava.get(otherHost) * vava.get(otherHost) * 0.4));
-//		}catch(NullPointerException e){
-//			transSize = T_OLD * V_OLD * 0.4;
-//		}
-			
-		System.out.println(host + " tava: " + tava.get(otherHost) + " vava: " + vava.get(otherHost) + " calculated: " + transSize);
+		transSize = round((tava.get(otherHost) * vava.get(otherHost) * 0.4));			
 		return transSize;
 	
 	}
-	
-	
+
 	/** updates transmission predictions */
 	private void updateTransmissionPreds(DTNHost host, DTNHost otherHost){
 		
@@ -239,23 +219,21 @@ public class TVProphetRouterV2 extends ActiveRouter {
 		}catch(NullPointerException e){}
 		
 		transmissionPreds.put(otherHost,  getTransSize(host, otherHost));
-		
 	}
 	
 	public double getTransmissionPreds(DTNHost host){
 		double transSize = transmissionPreds.get(host);
-		System.out.println(" TRANSMISSION SIZE: " + transSize);
 		return transSize;
 	}
 	
-	public Message getFirstMessageOnBuffer(){
-		List<Tuple<Message, Connection>> buffer = sortByWeight(getMessagesForConnected());
-
-		if (!buffer.isEmpty()){
-			return buffer.get(0).getKey();
-		}
-		return null;
-	}
+//	public Message getFirstMessageOnBuffer(){
+//		List<Tuple<Message, Connection>> buffer = sortByWeight(getMessagesForConnected());
+//
+//		if (!buffer.isEmpty()){
+//			return buffer.get(0).getKey();
+//		}
+//		return null;
+//	}
 	
 	@Override
 	public void update() {
@@ -265,112 +243,112 @@ public class TVProphetRouterV2 extends ActiveRouter {
 //			return; // nothing to transfer or is currently transferring
 //		}
 	
-		//sortBufferByWeight.
-		//get first message han iya buffer, get first message han ak buffer
-		//if the creationTime of otherNode's first message on the buffer is less than mine,
-		//call exchangeUrgentMessages
-		if (exchangeUrgentMessages() !=null){
-			return;
-		}
+//		/*
+//		 * sortBufferByWeight.
+//		 * 
+//		 */
+//		if (exchangeUrgentMessages() !=null){ //sorts bufferByWeight
+//			return;
+//		}
 		
 //		// try messages that could be delivered to final recipient
-//		if (exchangeDeliverableMessages() != null) { ////bago ini, check anay kun hino it dapat mauna pag send between two connections
-//			return;	
-//		}
-//		
+		if (exchangeDeliverableMessages() != null) {
+			return;	
+		}
+		
 //		tryOtherMessages();	
 	} 
 	
-	public boolean shouldSendFirst(Connection c){
-		DTNHost other = c.getOtherNode(getHost());
-		Message m1 = getFirstMessageOnBuffer();
-		Message m2 = ((TVProphetRouterV2) other.getRouter()).getFirstMessageOnBuffer();
-		
-		if (m2==null){ //otherNode has no message to send
-			return true;
-		}
-		if (m1==null){ //we have no message to send (di ko pa gets kayano error kun waray ini)
-			return false;
-		}
-
-		int weight1 = (int) m1.getProperty(MESSAGE_WEIGHT);
-		int weight2 = (int) m2.getProperty(MESSAGE_WEIGHT);
-		if (weight1<=weight2){ //evaluate whose message is more urgent (with respect to time) m1.getCreationTime() <= m2.getCreationTime() || 
-			return true;
-		}
-		return false;
-	}
+//	public boolean shouldSendFirst(Connection c){
+//		DTNHost other = c.getOtherNode(getHost());
+//		Message m1 = getFirstMessageOnBuffer();
+//		Message m2 = ((TVProphetRouterV2) other.getRouter()).getFirstMessageOnBuffer();
+//		
+//		if (m2==null){ //otherNode has no message to send
+//			return true;
+//		}
+//		if (m1==null){ //we have no message to send (di ko pa gets kayano error kun waray ini)
+//			return false;
+//		}
+//
+//		int weight1 = (int) m1.getProperty(MESSAGE_WEIGHT);
+//		int weight2 = (int) m2.getProperty(MESSAGE_WEIGHT);
+//		if (weight1<=weight2){ //evaluate whose message is more urgent (with respect to time) m1.getCreationTime() <= m2.getCreationTime() || 
+//			return true;
+//		}
+//		return false;
+//	}
 	
-	/*
-	 * Prioritizes sending messages that has lesser weight
-	 */
-	private Connection exchangeUrgentMessages(){
-		List<Connection> connections = getConnections();
-
-		if (connections.size() == 0) {
-			return null;
-		}
-		Tuple<Message, Connection> t = null;
-		List<Tuple<Message, Connection>> buffer = sortByWeight(getMessagesForConnected());
-
-		if (!buffer.isEmpty()){
-			for (Connection c : connections){
-//				if (shouldSendFirst(c)){
-					t = tryMessagesForConnected(buffer);
+//	/*
+//	 * Prioritizes sending messages that has lesser weight
+//	 */
+//	private Connection exchangeUrgentMessages(){
+//		List<Connection> connections = getConnections();
+//
+//		if (connections.size() == 0) {
+//			return null;
+//		}
+//		Tuple<Message, Connection> t = null;
+//		List<Tuple<Message, Connection>> buffer = sortByWeight(getMessagesForConnected());
+//
+//		if (!buffer.isEmpty()){
+//			for (Connection c : connections){
+////				if (shouldSendFirst(c)){
+//					t = tryMessagesForConnected(buffer);
+////				}
+//			}
+//		}
+//		
+//		if (t!=null){
+//			return t.getValue();
+//		}
+//
+////		 didn't start transfer to any node -> ask messages from connected
+//		for (Connection con : connections) {
+//			if (con.getOtherNode(getHost()).requestDeliverableMessages(con)) {
+//				return con;
+//			}
+//		}
+//		return null;
+//	}
+	
+//	/*
+//	 * Sorts messages depending on their weight
+//	 */
+//	@SuppressWarnings(value = "unchecked") /* ugly way to make this generic */
+//	private List sortByWeight(List list){
+//		Collections.sort(list,
+//				new Comparator() {
+//			/** Compares two tuples by their messages' weight */
+//			public int compare(Object o1, Object o2) {
+//				double diff;
+//				Message m1, m2;
+//
+//				if (o1 instanceof Tuple) {
+//					m1 = ((Tuple<Message, Connection>)o1).getKey();
+//					m2 = ((Tuple<Message, Connection>)o2).getKey();
 //				}
-			}
-		}
-		
-		if (t!=null){
-			return t.getValue();
-		}
-
-//		 didn't start transfer to any node -> ask messages from connected
-		for (Connection con : connections) {
-			if (con.getOtherNode(getHost()).requestDeliverableMessages(con)) {
-				return con;
-			}
-		}
-		return null;
-	}
-	
-	/*
-	 * Sorts messages depending on their weight
-	 */
-	@SuppressWarnings(value = "unchecked") /* ugly way to make this generic */
-	private List sortByWeight(List list){
-		Collections.sort(list,
-				new Comparator() {
-			/** Compares two tuples by their messages' weight */
-			public int compare(Object o1, Object o2) {
-				double diff;
-				Message m1, m2;
-
-				if (o1 instanceof Tuple) {
-					m1 = ((Tuple<Message, Connection>)o1).getKey();
-					m2 = ((Tuple<Message, Connection>)o2).getKey();
-				}
-				else if (o1 instanceof Message) {
-					m1 = (Message)o1;
-					m2 = (Message)o2;
-				}
-				else {
-					throw new SimError("Invalid type of objects in " +
-							"the list");
-				}
-
-				int weight1 = (int) m1.getProperty(MESSAGE_WEIGHT);
-				int weight2 = (int) m2.getProperty(MESSAGE_WEIGHT);
-				diff = weight1- weight2;
-				if (diff == 0) {
-					return 0;
-				}
-				return (diff < 0 ? -1 : 1);
-			}
-		});
-//		System.out.println("buffer List: " +list);
-		return list;
-	}
+//				else if (o1 instanceof Message) {
+//					m1 = (Message)o1;
+//					m2 = (Message)o2;
+//				}
+//				else {
+//					throw new SimError("Invalid type of objects in " +
+//							"the list");
+//				}
+//
+//				int weight1 = (int) m1.getProperty(MESSAGE_WEIGHT);
+//				int weight2 = (int) m2.getProperty(MESSAGE_WEIGHT);
+//				diff = weight1- weight2;
+//				if (diff == 0) {
+//					return 0;
+//				}
+//				return (diff < 0 ? -1 : 1);
+//			}
+//		});
+////		System.out.println("buffer List: " +list);
+//		return list;
+//	}
 	
 	public Message getStoredMessage(String id) {
 		for (Message m : getMessageCollection()){

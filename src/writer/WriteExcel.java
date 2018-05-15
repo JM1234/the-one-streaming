@@ -1,19 +1,17 @@
 package writer;
 
 import java.io.File;
+
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.TreeMap;
 
 import core.DTNHost;
-import jxl.Cell;
 import jxl.CellView;
 import jxl.Workbook;
 import jxl.WorkbookSettings;
 import jxl.format.UnderlineStyle;
 import jxl.read.biff.BiffException;
-import jxl.write.Formula;
 import jxl.write.Label;
 import jxl.write.Number;
 import jxl.write.WritableCellFormat;
@@ -53,21 +51,16 @@ public class WriteExcel {
         if (file.exists()){
 			workbook = Workbook.getWorkbook(file, wbSettings);
 			wb = Workbook.createWorkbook(file, workbook);
-			System.out.println(" CREATED WORKBOOK");
 			excelSheet = wb.getSheet(0); 
 			initLabel();
 		} 
         else{
-        	System.out.println("@ exception1");
         	wb = Workbook.createWorkbook(file, wbSettings);
         	wb.createSheet("Report", 0);
         	  excelSheet = wb.getSheet(0); 
         	initLabel();
         	createLabel(excelSheet);   	
-            System.out.println("@ exception");
         }
-     
-//      wb.getSheets()
     }
     
     public void initLabel() throws WriteException{
@@ -96,7 +89,7 @@ public class WriteExcel {
     public void write(TreeMap<DTNHost, NodeProperties> nodeRecord, int seed){
     	this.nodeRecord = nodeRecord;    	
     
-    	int row = excelSheet.getRows(); //
+    	int row = excelSheet.getRows();
 		try {
 	        createContent(excelSheet, row, seed);
 		} catch (WriteException e) {

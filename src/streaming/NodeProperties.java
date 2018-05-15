@@ -27,19 +27,18 @@ public class NodeProperties {
 	private int nrofTimesSentTrans=0;
 	private int nrofTimesSentChunk=0;
 	private int nrofFragmentsCreated=0;
+	
 	private TreeMap<Long, Double> chunksReceived= new TreeMap<Long, Double>();;
 	private LinkedHashMap<Double, ArrayList<DTNHost>> unchoked = new LinkedHashMap<Double, ArrayList<DTNHost>>();
 	private LinkedHashMap<Double, ArrayList<DTNHost>> interested = new LinkedHashMap<Double, ArrayList<DTNHost>>();
 	private LinkedHashMap<Double,ArrayList<DTNHost>> availableH = new LinkedHashMap<Double,ArrayList<DTNHost>>();
 	private	HashMap<Long, Double> requested = new HashMap<Long, Double>();
-	private long ack=-1;
-	private int sizeAdjustedCount=0;
 	private TreeMap<Long, Double> chunkWaitTime = new TreeMap<Long, Double>();
-	
-//	public ArrayList<DTNHost> hostNames = new ArrayList<DTNHost>();
-//	public ArrayList<ArrayList<Long>> toSearch =  new ArrayList<ArrayList<Long>>();
-
 	public HashMap<DTNHost, ArrayList<Long>> toSearch = new HashMap<DTNHost, ArrayList<Long>>();
+	public ArrayList<Long> chunksSkipped = new ArrayList<Long>();
+	
+	private long ack;
+	private int sizeAdjustedCount=0;
 	
 	public void addChunk(long chunk){
 		chunksReceived.put(chunk, SimClock.getTime());
@@ -229,6 +228,14 @@ public class NodeProperties {
 		}catch(NoSuchElementException e){
 			return -1;
 		}
+		
+	}
+
+	public void addSkippedChunk(long id){
+		chunksSkipped.add(id);
 	}
 	
+	public int getNrOfSkippedChunks(){
+		return chunksSkipped.size();
+	}
 }
