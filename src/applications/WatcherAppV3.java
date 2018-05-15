@@ -36,7 +36,6 @@ public class WatcherAppV3 extends StreamingApplication{
 	private int		seed = 0;
 	private int		destMin=0;
 	private int		destMax=1;
-	private Random	rng;
 	
 	private int 	status =-1;
 	private int 	watcherType; //1 if listener. 0 if just a hop
@@ -81,7 +80,6 @@ public class WatcherAppV3 extends StreamingApplication{
 		super(a);
 		
 		this.watcherType = a.getWatcherType();
-		this.rng = new Random(this.seed);
 		props = new StreamProperties("");
 		neighborData = new HashMap<DTNHost, ArrayList<Long>>();
 		availableNeighbors = new HashMap<DTNHost, ArrayList<Long>>();
@@ -99,7 +97,7 @@ public class WatcherAppV3 extends StreamingApplication{
 		if (type==null) return msg;
 		
 		if (type.equals(APP_TYPE)){
-			System.out.println("-------------------------------------------------------------------------------");
+//			System.out.println("-------------------------------------------------------------------------------");
 
 			String msg_type = (String) msg.getProperty("msg_type");
 			
@@ -233,8 +231,8 @@ public class WatcherAppV3 extends StreamingApplication{
 //					sendChunk(props.getChunk(chunkNeeded), host, msg.getFrom()); //simply sending. no buffer limit yet
 //				}
 				
-				evaluateToSend(host, msg);
-//				sendWithoutFrag(host, msg);
+//				evaluateToSend(host, msg);
+				sendWithoutFrag(host, msg);
 			}
 
 			else if (msg_type.equals(INTERESTED)){ 	//evaluate response if choke or unchoke
@@ -302,7 +300,7 @@ public class WatcherAppV3 extends StreamingApplication{
 			ArrayList<StreamChunk> bundle = frag.getBundled();
 			int currFrag = frag.getId();
 			
-			System.out.println( host + " trans frag received " + currFrag + ": " + frag.getStartPosition() + " : " + frag.getEndPosition());
+//			System.out.println( host + " trans frag received " + currFrag + ": " + frag.getStartPosition() + " : " + frag.getEndPosition());
 
 			if (!sadf.doesExist(currFrag)){
 				sadf.initTransLevelFrag(frag.getId());
@@ -387,12 +385,12 @@ public class WatcherAppV3 extends StreamingApplication{
 		
 		try{
 			if (isWatching && (curTime-this.lastTimePlayed >= Stream.getStreamInterval()) && curTime>=streamStartTime){
-				System.out.println("++++++++++++++MUST BE PLAYING +++++++++++++++++");
+//				System.out.println("++++++++++++++MUST BE PLAYING +++++++++++++++++");
 				
 				if (props.isBufferReady(props.getNext()) && !props.isReady(props.getNext())){
-					System.out.println(" Skipped chunk " + props.getNext());
+//					System.out.println(" Skipped chunk " + props.getNext());
+					sendEventToListeners(StreamAppReporter.SKIPPED_CHUNK, props.getNext(), host);
 					props.skipNext();
-					sendEventToListeners(StreamAppReporter.SKIPPED_CHUNK, null, host);
 				}
 
 				if(props.isReady(props.getNext())){
@@ -406,7 +404,7 @@ public class WatcherAppV3 extends StreamingApplication{
 					status = WAITING;
 					sendEventToListeners(StreamAppReporter.INTERRUPTED, null, host);
 				}
-				System.out.println("+++++++++++++++++++++++++++++++++++++++++++++");
+//				System.out.println("+++++++++++++++++++++++++++++++++++++++++++++");
 			}
 			
 		}catch(NullPointerException e){

@@ -11,13 +11,17 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 
 import applications.StreamingApplication;
 import core.Application;
 import core.ApplicationListener;
 import core.DTNHost;
+import core.Settings;
 import core.SimClock;
+import jxl.read.biff.BiffException;
 import jxl.write.WriteException;
+import movement.MovementModel;
 import streaming.NodeProperties;
 import writer.WriteExcel;
 
@@ -48,7 +52,9 @@ public class StreamAppReporter extends Report implements ApplicationListener{
 	public static final String FRAGMENT_CREATED = "fragmentCreated";
 	public static final String SKIPPED_CHUNK = "skippedChunk";
 	
-	private HashMap<DTNHost, NodeProperties> nodeRecord = new HashMap<DTNHost, NodeProperties>();
+	private static final String excelDir = "/home/jejejanz/janeil_workspace/the-one-streaming/reports/DTNStreaming/Experiment1/nofrag/";
+	
+	private TreeMap<DTNHost, NodeProperties> nodeRecord = new TreeMap<DTNHost, NodeProperties>();
 	private int createdChunks=0;
 	
 	public void gotEvent(String event, Object params, Application app, DTNHost host) {
@@ -73,11 +79,6 @@ public class StreamAppReporter extends Report implements ApplicationListener{
 			nodeProps.setTimeStartedPlaying(time);
 		}
 		else if (event.equalsIgnoreCase(LAST_PLAYED)){
-			
-			if (nodeProps.getTimeLastPlayed() == -1){
-				nodeProps.setTimeStartedPlaying(getSimTime());
-			}
-			
 			double time=(double) params;
 			nodeProps.setTimeLastPlayed(time);
 		}
@@ -138,7 +139,8 @@ public class StreamAppReporter extends Report implements ApplicationListener{
 			nodeProps.incNrOfFragmentsCreated();
 		}
 		else if (event.equalsIgnoreCase(SKIPPED_CHUNK)){
-			nodeProps.incNrOfChunksSkipped();
+			long id = (long) params;
+			nodeProps.addSkippedChunk(id);
 		}
 		nodeRecord.put(host, nodeProps);
 	}
@@ -208,18 +210,27 @@ public class StreamAppReporter extends Report implements ApplicationListener{
 //		super.done();
 //	}
 	
+	public int getSeed(){
+		Settings s = new Settings(MovementModel.MOVEMENT_MODEL_NS);
+		return s.getInt(MovementModel.RNG_SEED);
+	}
+	
 	public void done(){
 		WriteExcel test = new WriteExcel();
+	
+		test.setOutputFile(excelDir + getScenarioName() + ".xls");
 		
-		String outputFile = "C:/Users/janz/git/the-one-streaming/reports/DTNStreaming-Experiments/Experiment1/withbuffer.xls";
-		test.setOutputFile(outputFile);
-	    try {
-	    	  test.write(nodeRecord);
-		} catch (WriteException | IOException e) {
+		try {
+			test.init();
+			test.write(nodeRecord, getSeed());
+			test.writeToFile();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (WriteException e) {
+			e.printStackTrace();
+		} catch (BiffException e) {
 			e.printStackTrace();
 		}
-	    
-        System.out.println("Please check the result file under " + outputFile);
 	}
 	
 	public double round(double value) {

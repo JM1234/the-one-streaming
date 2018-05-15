@@ -27,7 +27,6 @@ public class NodeProperties {
 	private int nrofTimesSentTrans=0;
 	private int nrofTimesSentChunk=0;
 	private int nrofFragmentsCreated=0;
-	private int nrOfChunksSkipped=0;
 	
 	private TreeMap<Long, Double> chunksReceived= new TreeMap<Long, Double>();;
 	private LinkedHashMap<Double, ArrayList<DTNHost>> unchoked = new LinkedHashMap<Double, ArrayList<DTNHost>>();
@@ -36,7 +35,8 @@ public class NodeProperties {
 	private	HashMap<Long, Double> requested = new HashMap<Long, Double>();
 	private TreeMap<Long, Double> chunkWaitTime = new TreeMap<Long, Double>();
 	public HashMap<DTNHost, ArrayList<Long>> toSearch = new HashMap<DTNHost, ArrayList<Long>>();
-
+	public ArrayList<Long> chunksSkipped = new ArrayList<Long>();
+	
 	private long ack;
 	private int sizeAdjustedCount=0;
 	
@@ -222,14 +222,6 @@ public class NodeProperties {
 		return nrofFragmentsCreated;
 	}
 	
-	public void incNrOfChunksSkipped(){
-		nrOfChunksSkipped++;
-	}
-	
-	public int getNrOfChunksSkipped(){
-		return nrOfChunksSkipped;
-	}
-	
 	public long getLastChunkReceived(){
 		try{
 			return chunksReceived.lastKey();
@@ -237,5 +229,13 @@ public class NodeProperties {
 			return -1;
 		}
 		
+	}
+
+	public void addSkippedChunk(long id){
+		chunksSkipped.add(id);
+	}
+	
+	public int getNrOfSkippedChunks(){
+		return chunksSkipped.size();
 	}
 }

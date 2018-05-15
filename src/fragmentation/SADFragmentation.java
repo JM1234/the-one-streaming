@@ -17,7 +17,7 @@ public class SADFragmentation {
 	 * bluetooth: 3200 kBps = 25Mbps
 	 * wifidirect: 32000 kBps = 250Mbps
 	 */
-	private static int id=0;
+	private int id=0;
 
 	private HashMap<Integer, Fragment> fragments;
 	

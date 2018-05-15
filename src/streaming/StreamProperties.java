@@ -11,7 +11,7 @@ import fragmentation.Fragment;
 
 public class StreamProperties {
 
-	private int playing=-1; //index currently playing
+	private long playing=-1; //index currently playing
 	private double startTime=-1;
 	private long chunkStart=-1;
 	
@@ -80,11 +80,11 @@ public class StreamProperties {
 		playing = playing+1;
 	}
 	
-	public int getPlaying(){
+	public long getPlaying(){
 		return playing;
 	}
 	
-	public int getNext(){
+	public long getNext(){
 		return playing+1;
 	}
 	

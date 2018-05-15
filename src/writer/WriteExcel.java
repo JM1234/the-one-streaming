@@ -4,12 +4,15 @@ import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.TreeMap;
 
 import core.DTNHost;
+import jxl.Cell;
 import jxl.CellView;
 import jxl.Workbook;
 import jxl.WorkbookSettings;
 import jxl.format.UnderlineStyle;
+import jxl.read.biff.BiffException;
 import jxl.write.Formula;
 import jxl.write.Label;
 import jxl.write.Number;
@@ -24,42 +27,50 @@ import streaming.NodeProperties;
 
 public class WriteExcel {
 
-	
     private WritableCellFormat timesBoldUnderline;
     private WritableCellFormat times;
     private String inputFile;
-
+    
     private String[] header = {"HostName", "AverageWaitTime", "TimeFirstRequested","TimeFirstChunkReceived", "TimeStartedPlaying", "TimeLastPlayed",
-    		"ACK", "LastChunkReceived", "#ofTimesInterrupted", "TotalChunksReceived", "#ofDuplicateChunksReceived", "#ofTimesRequested", "#ofDuplicateRequest", 
-                               "TotalIndexFragmentSent", "TotalTransFragmentSent", "TotalChunksSent", "#ofFragmentsCreated (IndexLevel)", "#ofTimesAdjusted"};
-    HashMap<DTNHost, NodeProperties> nodeRecord = new HashMap<DTNHost, NodeProperties>();
+    		"ACK", "LastChunkReceived", "#ofTimesInterrupted", "#ofSkippedChunks", "TotalChunksReceived", "#ofDuplicateChunksReceived", "#ofTimesRequested", "#ofDuplicateRequest", 
+                               "TotalIndexFragmentSent", "TotalTransFragmentSent", "TotalChunksSent", "#ofFragmentsCreated (IndexLevel)", "#ofTimesAdjusted",
+                               "SeedNo."};
+    TreeMap<DTNHost, NodeProperties> nodeRecord = new TreeMap<DTNHost, NodeProperties>();
+    
+    Workbook workbook;
+    WritableWorkbook wb;
+    WritableSheet excelSheet;
     
     public void setOutputFile(String inputFile) {
     	this.inputFile = inputFile;
     }
 
-    public void write(HashMap<DTNHost, NodeProperties> nodeRecord) throws IOException, WriteException {
-        
+    public void init() throws IOException, WriteException, BiffException{
     	File file = new File(inputFile);
-        WorkbookSettings wbSettings = new WorkbookSettings();
-
+        WorkbookSettings wbSettings = new WorkbookSettings(); 
         wbSettings.setLocale(new Locale("en", "EN"));
-
-        WritableWorkbook workbook = Workbook.createWorkbook(file, wbSettings);
-        workbook.createSheet("Report", 0);
-        WritableSheet excelSheet = workbook.getSheet(0);
         
-        this.nodeRecord = nodeRecord;
-        
-        createLabel(excelSheet);
-        createContent(excelSheet);
- 
-        workbook.write();
-        workbook.close();
+        if (file.exists()){
+			workbook = Workbook.getWorkbook(file, wbSettings);
+			wb = Workbook.createWorkbook(file, workbook);
+			System.out.println(" CREATED WORKBOOK");
+			excelSheet = wb.getSheet(0); 
+			initLabel();
+		} 
+        else{
+        	System.out.println("@ exception1");
+        	wb = Workbook.createWorkbook(file, wbSettings);
+        	wb.createSheet("Report", 0);
+        	  excelSheet = wb.getSheet(0); 
+        	initLabel();
+        	createLabel(excelSheet);   	
+            System.out.println("@ exception");
+        }
+     
+//      wb.getSheets()
     }
-
-    private void createLabel(WritableSheet sheet)
-            throws WriteException {
+    
+    public void initLabel() throws WriteException{
         // Lets create a times font
         WritableFont times10pt = new WritableFont(WritableFont.TIMES, 10);
         // Define the cell format
@@ -80,13 +91,35 @@ public class WriteExcel {
         cv.setFormat(timesBoldUnderline);
         cv.setAutosize(true);
 
+    }
+    
+    public void write(TreeMap<DTNHost, NodeProperties> nodeRecord, int seed){
+    	this.nodeRecord = nodeRecord;    	
+    
+    	int row = excelSheet.getRows(); //
+		try {
+	        createContent(excelSheet, row, seed);
+		} catch (WriteException e) {
+			e.printStackTrace();
+		}
+
+    }
+       
+    public void writeToFile() throws IOException, WriteException{
+    	wb.write();
+        wb.close();    
+    }
+    
+    private void createLabel(WritableSheet sheet)
+            throws WriteException {
+
         // Write a few headers
         for(int i=0; i<header.length; i++){
         	addCaption(sheet, i, 0, header[i]);
         }
     }
 
-    private void createContent(WritableSheet sheet) throws WriteException,
+    private void createContent(WritableSheet sheet, int row, int seed) throws WriteException,
             RowsExceededException {
     	
         // Write a few number
@@ -114,31 +147,32 @@ public class WriteExcel {
 //            addLabel(sheet, 1, i, "Another text");
 //        }
         
-        int column=1;
         for (DTNHost h: nodeRecord.keySet()){
         	NodeProperties nProps = nodeRecord.get(h);
         	
-        	addLabel(sheet, 0, column, h.toString());
-        	addDouble(sheet, 1, column, nProps.getAverageWaitTime());
-        	addDouble(sheet, 2, column, nProps.getTimeFirstRequested());
-        	addDouble(sheet, 3, column, nProps.getTimeFirstChunkReceived());
-        	addDouble(sheet, 4, column, nProps.getTimeStartedPlaying());
-        	addDouble(sheet, 5, column, nProps.getTimeLastPlayed());
-        	addLong(sheet, 6, column, nProps.getAck());
-        	addDouble(sheet, 7, column, nProps.getLastChunkReceived());
-        	addDouble(sheet, 8, column, nProps.getNrofTimesInterrupted()/100);
-        	addInteger(sheet, 9, column, nProps.getNrofChunksReceived());
-        	addInteger(sheet, 10, column, nProps.getNrofDuplicateChunks());
-        	addInteger(sheet, 11, column, nProps.getNrofTimesRequested());
-        	addInteger(sheet, 12, column, nProps.getNrofDuplicateRequest());
-        	addInteger(sheet, 13, column, nProps.getNrOfTimesSentIndex());
-        	addInteger(sheet, 14, column, nProps.getNrofTimesSentTrans());
-        	addInteger(sheet, 15, column, nProps.getNrOfTimesSentChunk());
-        	addInteger(sheet, 16, column, nProps.getNrOfFragmentsCreated());
-        	addInteger(sheet, 17, column, nProps.getSizeAdjustedCount());
+        	addLabel(sheet, 0, row, h.toString());
+        	addDouble(sheet, 1, row, nProps.getAverageWaitTime());
+        	addDouble(sheet, 2, row, nProps.getTimeFirstRequested());
+        	addDouble(sheet, 3, row, nProps.getTimeFirstChunkReceived());
+        	addDouble(sheet, 4, row, nProps.getTimeStartedPlaying());
+        	addDouble(sheet, 5, row, nProps.getTimeLastPlayed());
+        	addLong(sheet, 6, row, nProps.getAck());
+        	addLong(sheet, 7, row, nProps.getLastChunkReceived());
+           	addDouble(sheet, 8, row, nProps.getNrofTimesInterrupted()/100);
+           	addInteger(sheet, 9, row, nProps.getNrOfSkippedChunks());
+        	addInteger(sheet, 10, row, nProps.getNrofChunksReceived());
+        	addInteger(sheet, 11, row, nProps.getNrofDuplicateChunks());
+        	addInteger(sheet, 12, row, nProps.getNrofTimesRequested());
+        	addInteger(sheet, 13, row, nProps.getNrofDuplicateRequest());
+        	addInteger(sheet, 14, row, nProps.getNrOfTimesSentIndex());
+        	addInteger(sheet, 15, row, nProps.getNrofTimesSentTrans());
+        	addInteger(sheet, 16, row, nProps.getNrOfTimesSentChunk());
+        	addInteger(sheet, 17, row, nProps.getNrOfFragmentsCreated());
+        	addInteger(sheet, 18, row, nProps.getSizeAdjustedCount());
+
         	//overhead pa for decoding buffermap and encoding fragments
-        	
-        	 column++;
+        	addInteger(sheet, 18, row, seed);
+        	row++;
         }
     }
 
@@ -156,15 +190,15 @@ public class WriteExcel {
         sheet.addCell(number);
     }
     
-    private void addLong(WritableSheet sheet, int column, int row,
-            long value) throws WriteException, RowsExceededException {
+    private void addDouble(WritableSheet sheet, int column, int row,
+            Double value) throws WriteException, RowsExceededException {
         Number number;
         number = new Number(column, row, value, times);
         sheet.addCell(number);
     }
     
-    private void addDouble(WritableSheet sheet, int column, int row,
-            double value) throws WriteException, RowsExceededException {
+    private void addLong(WritableSheet sheet, int column, int row,
+            long value) throws WriteException, RowsExceededException {
         Number number;
         number = new Number(column, row, value, times);
         sheet.addCell(number);

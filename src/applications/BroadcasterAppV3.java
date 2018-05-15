@@ -28,9 +28,8 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	public static final String STREAM_TIME = "streamTime";
 			
 	private boolean broadcasted=false;
-	private static double sTime;
+	private double sTime;
 	
-	private int		seed = 0;
 	private String 	streamID;
 	
 	private Random	r;
@@ -57,7 +56,6 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	public BroadcasterAppV3(BroadcasterAppV3 a) {
 		super(a);
 		
-		this.seed = a.getSeed();
 		this.streamID=a.getStreamID();
 		
 		sadf = new SADFragmentation();
@@ -111,8 +109,8 @@ public class BroadcasterAppV3 extends StreamingApplication{
 					System.out.println("ReceivedRequest from "+msg.getFrom() + " : " +chunkNeeded);
 					
 					//evaluate here if fragment or chunk it isesend
-					evaluateToSend(host, msg);
-//					sendWithoutFrag(host, msg);
+//					evaluateToSend(host, msg);
+					sendWithoutFrag(host, msg);
 				}
 				
 				else if (msg_type.equals(INTERESTED)){
