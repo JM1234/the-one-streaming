@@ -18,6 +18,7 @@ import core.Settings;
 import core.SimClock;
 import core.SimError;
 import core.SimScenario;
+import movement.MovementModel;
 
 /**
  * Abstract superclass for all reports. All settings defined in this class
@@ -81,7 +82,7 @@ public abstract class Report {
 
 		Settings settings = new Settings();
 		scenarioName = settings.valueFillString(settings.getSetting(
-				SimScenario.SCENARIO_NS + "." +	SimScenario.NAME_S));
+				SimScenario.SCENARIO_NS + "." +	SimScenario.NAME_S + "." + getSeed() ));
 
 		settings = getSettings();
 
@@ -130,6 +131,11 @@ public abstract class Report {
 		checkDirExistence(outFileName);
 	}
 
+	private int getSeed(){
+		Settings s = new Settings(MovementModel.MOVEMENT_MODEL_NS);
+		return s.getInt(MovementModel.RNG_SEED);
+	}
+	
 	/**
 	 * Checks that a directory for a file exists or creates the directory
 	 * if it didn't exist.

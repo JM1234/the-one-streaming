@@ -48,6 +48,9 @@ Group2.application1=streamApp2
 #Group3.application1=streamApp3
 
 # Add report for Stream app
-Report.nrofReports = 2
+Report.nrofReports = 5
 Report.report1 = StreamAppReporter
 Report.report2 = MessageStatsReport
+Report.report3 = TotalEncountersReport
+Report.report4 = TotalContactTimeReport
+Report.report5 = ContactTimesReport

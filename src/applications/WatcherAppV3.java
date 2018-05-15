@@ -240,8 +240,8 @@ public class WatcherAppV3 extends StreamingApplication{
 //					sendChunk(props.getChunk(chunkNeeded), host, msg.getFrom()); //simply sending. no buffer limit yet
 //				}
 				
-				evaluateToSend(host, msg);
-//				sendWithoutFrag(host, msg);
+//				evaluateToSend(host, msg);
+				sendWithoutFrag(host, msg);
 			}
 
 			else if (msg_type.equals(INTERESTED)){ 	//evaluate response if choke or unchoke

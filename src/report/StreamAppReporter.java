@@ -11,13 +11,17 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.TreeMap;
 
 import applications.StreamingApplication;
 import core.Application;
 import core.ApplicationListener;
 import core.DTNHost;
+import core.Settings;
 import core.SimClock;
+import jxl.read.biff.BiffException;
 import jxl.write.WriteException;
+import movement.MovementModel;
 import streaming.NodeProperties;
 import writer.WriteExcel;
 
@@ -47,8 +51,9 @@ public class StreamAppReporter extends Report implements ApplicationListener{
 	public static final String SENT_CHUNK = "sentChunk";
 	public static final String FRAGMENT_CREATED = "fragmentCreated";
 
+	private static final String excelDir = "/home/jejejanz/janeil_workspace/the-one-streaming/reports/DTNStreaming/Experiment1/nofrag/";
 	
-	private HashMap<DTNHost, NodeProperties> nodeRecord = new HashMap<DTNHost, NodeProperties>();
+	private TreeMap<DTNHost, NodeProperties> nodeRecord = new TreeMap<DTNHost, NodeProperties>();
 	private int createdChunks=0;
 	
 	public void gotEvent(String event, Object params, Application app, DTNHost host) {
@@ -77,7 +82,7 @@ public class StreamAppReporter extends Report implements ApplicationListener{
 			nodeProps.setTimeLastPlayed(time);
 		}
 		else if (event.equalsIgnoreCase(INTERRUPTED)){
-			int ctr = nodeProps.getNrofTimesInterrupted()+1;
+			double ctr = nodeProps.getNrofTimesInterrupted()+1;
 			nodeProps.setNrofTimesInterrupted(ctr);
 		}
 		else if (event.equalsIgnoreCase(RECEIVED_CHUNK)){
@@ -200,17 +205,27 @@ public class StreamAppReporter extends Report implements ApplicationListener{
 //		super.done();
 //	}
 	
+	public int getSeed(){
+		Settings s = new Settings(MovementModel.MOVEMENT_MODEL_NS);
+		return s.getInt(MovementModel.RNG_SEED);
+	}
+	
 	public void done(){
 		WriteExcel test = new WriteExcel();
+	
+		test.setOutputFile(excelDir + getScenarioName() + ".xls");
 		
-		String outputFile = "/home/jejejanz/janeil_workspace/the-one-streaming/reports/Experiments-DTNStreaming/trial.xls";
-		test.setOutputFile(outputFile);
-	    try {
-	    	  test.write(nodeRecord);
-		} catch (WriteException | IOException e) {
+		try {
+			test.init();
+			test.write(nodeRecord, getSeed());
+			test.writeToFile();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (WriteException e) {
+			e.printStackTrace();
+		} catch (BiffException e) {
 			e.printStackTrace();
 		}
-        System.out.println("Please check the result file under " + outputFile);
 	}
 	
 	public double round(double value) {

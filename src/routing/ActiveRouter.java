@@ -5,12 +5,11 @@
 package routing;
 
 import java.util.ArrayList;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-
-import com.sun.org.apache.xerces.internal.util.SynchronizedSymbolTable;
 
 import routing.util.EnergyModel;
 import routing.util.MessageTransferAcceptPolicy;

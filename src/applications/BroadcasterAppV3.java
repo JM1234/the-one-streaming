@@ -28,7 +28,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	public static final String STREAM_TIME = "streamTime";
 			
 	private boolean broadcasted=false;
-	private static double sTime;
+	private double sTime;
 	
 	private int		seed = 0;
 	private String 	streamID;
@@ -111,8 +111,8 @@ public class BroadcasterAppV3 extends StreamingApplication{
 					System.out.println("ReceivedRequest from "+msg.getFrom() + " : " +chunkNeeded);
 					
 					//evaluate here if fragment or chunk it isesend
-					evaluateToSend(host, msg);
-//					sendWithoutFrag(host, msg);
+//					evaluateToSend(host, msg);
+					sendWithoutFrag(host, msg);
 				}
 				
 				else if (msg_type.equals(INTERESTED)){
@@ -153,8 +153,12 @@ public class BroadcasterAppV3 extends StreamingApplication{
 				System.out.println("Generated chunk " + stream.getLatestChunk().getChunkID() + "Fragment: " + stream.getLatestChunk().getFragmentIndex());
 				if ((stream.getLatestChunk().getChunkID()+1) % SADFragmentation.NO_OF_CHUNKS_PER_FRAG == 0){
 					int sIndex = sadf.getCurrIndex() * SADFragmentation.NO_OF_CHUNKS_PER_FRAG;
-					sadf.createFragment(new ArrayList(stream.getChunks().subList(sIndex, sIndex+SADFragmentation.NO_OF_CHUNKS_PER_FRAG)));
-					sadf.getFragment(sadf.getCurrIndex()-1).setIndexComplete();
+					sadf.createFragment(new ArrayList(stream.getChunks().subList(sIndex,sIndex+SADFragmentation.NO_OF_CHUNKS_PER_FRAG)));
+					try{
+						sadf.getFragment(sadf.getCurrIndex()-1).setIndexComplete();
+					}catch(NullPointerException e){
+						sadf.getFragment(0).setIndexComplete();						
+					}
 					sendEventToListeners(StreamAppReporter.FRAGMENT_CREATED, null, host);
 				}
 			}
