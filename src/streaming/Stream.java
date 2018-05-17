@@ -2,11 +2,11 @@ package streaming;
 
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 
 import core.DTNHost;
-import core.Message;
 
 /**
  * Works like a MessageListener, only with a stream of chunks.
@@ -21,10 +21,11 @@ public class Stream {
 
 	private int streamInterval;
 	private int accumChunkSize =0;
-	private int byterate;
+	private double byterate;
 
 	private LinkedHashMap<Long, StreamChunk> streamSet;
 	private HashMap<DTNHost, Integer> listener;
+	private ArrayList<Long> temp;
 	private StreamChunk latestChunk;
 	
 	protected DTNHost from;
@@ -32,19 +33,26 @@ public class Stream {
 	protected String id;
 	private double timeLastStream;	
 	private String streamID;
+	private double timeStarted;
 	
 	//variable for limitTime. randomize variable on how long the live stream is gonna last
-	public Stream(String streamID, int streamInterval, int byterate) {
+	public Stream(String streamID, int streamInterval, double byterate, double timeStarted) {
 		this.streamID = streamID;
 		this.byterate = byterate;
+		this.timeStarted = timeStarted;
 		
 		this.streamInterval = streamInterval;
 		streamSet= new LinkedHashMap<Long,StreamChunk>() ;
 		listener = new HashMap<DTNHost, Integer>();
+		temp = new ArrayList<Long>();
 	}
 	
 	public int getStreamInterval(){
 		return streamInterval;
+	}
+	
+	public double getTimeStarted(){
+		return timeStarted;
 	}
 	
 	public void startLiveStream(){
@@ -142,20 +150,19 @@ public class Stream {
 		return streamSet.size();
 	}
 
-	public ArrayList<StreamChunk> getChunks(){
-		ArrayList<StreamChunk> s = new ArrayList<StreamChunk> (streamSet.values());
-		return s;
+	public Collection<StreamChunk> getChunks(){
+		return streamSet.values();
 	}
 	
 	public ArrayList<Long> getBuffermap(){
-		ArrayList<Long> ids = new ArrayList<Long>();
+		temp.clear();
 		for (StreamChunk c: getChunks()){
-			ids.add(c.getChunkID());
+			temp.add(c.getChunkID());
 		}
-		return ids;
+		return temp;
 	}
 	
-	public int getByterate(){
+	public double getByterate(){
 		return byterate;
 	}
 }

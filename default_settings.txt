@@ -3,10 +3,10 @@
 #
 
 ## Scenario settings
-#Scenario.name = Experiment1-NoFrag-1node
+#Scenario.name = E1_NoFrag_NoPrebuffer_Static_1node
 Scenario.simulateConnections = true
-Scenario.updateInterval = 0.01
-Scenario.endTime = 3600
+Scenario.updateInterval = 0.1
+#Scenario.endTime = 3600
 Scenario.nrofHostGroups = 1
 
 ## Interface-specific settings:
@@ -95,7 +95,7 @@ Events1.hosts = 0,2
 ## Reports - all report names have to be valid report classes
 # how many reports to load
 #Report.nrofReports = 1
-#Report.reportDir = reports/DTNStreaming/Experiment1/nofrag
+#Report.reportDir = reports/DTNStreaming/Experiment1/nofrag/stationary
 # Report classes to load
 #Report.report1 =EventLogReport
 

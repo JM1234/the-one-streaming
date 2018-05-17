@@ -541,7 +541,7 @@ public class TVProphetRouterV2 extends ActiveRouter {
 		RoutingInfo ri = new RoutingInfo(preds.size() +
 				" delivery prediction(s)");
 		RoutingInfo transSize = new RoutingInfo(transmissionPreds.size() + " transmission prediction(s)");
-		RoutingInfo buffer = new RoutingInfo(getMessageCollection().size() + " messages to send.");
+//		RoutingInfo buffer = new RoutingInfo(getMessageCollection().size() + " messages to send.");
 		
 				for (Map.Entry<DTNHost, Double> e : preds.entrySet()) {
 			DTNHost host = e.getKey();
@@ -557,14 +557,14 @@ public class TVProphetRouterV2 extends ActiveRouter {
 			transSize.addMoreInfo(new RoutingInfo(String.format("%s : %.6f", host, value)));
 		}
 		
-		for (Message m : getMessageCollection()){
-			buffer.addMoreInfo(new RoutingInfo(String.format("%s : %s", m.getTo(), m)));
-		}
+//		for (Message m : getMessageCollection()){
+//			buffer.addMoreInfo(new RoutingInfo(String.format("%s : %s", m.getTo(), m)));
+//		}
 
 		
 		top.addMoreInfo(ri);
 		top.addMoreInfo(transSize);
-		top.addMoreInfo(buffer);
+//		top.addMoreInfo(buffer);
 		return top;
 	}
 	

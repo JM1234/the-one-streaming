@@ -31,7 +31,7 @@ public class NodeProperties {
 	private TreeMap<Long, Double> chunksReceived= new TreeMap<Long, Double>();;
 	private LinkedHashMap<Double, ArrayList<DTNHost>> unchoked = new LinkedHashMap<Double, ArrayList<DTNHost>>();
 	private LinkedHashMap<Double, ArrayList<DTNHost>> interested = new LinkedHashMap<Double, ArrayList<DTNHost>>();
-	private LinkedHashMap<Double,ArrayList<DTNHost>> availableH = new LinkedHashMap<Double,ArrayList<DTNHost>>();
+	private LinkedHashMap<Double,Set<DTNHost>> availableH = new LinkedHashMap<Double,Set<DTNHost>>();
 	private	HashMap<Long, Double> requested = new HashMap<Long, Double>();
 	private TreeMap<Long, Double> chunkWaitTime = new TreeMap<Long, Double>();
 	public HashMap<DTNHost, ArrayList<Long>> toSearch = new HashMap<DTNHost, ArrayList<Long>>();
@@ -47,6 +47,8 @@ public class NodeProperties {
 	}
 	
 	public double getAverageWaitTime(){
+		if (chunkWaitTime.isEmpty()) return -1;
+
 		double average = 0;
 		for(long id : chunkWaitTime.keySet()){
 			average +=chunkWaitTime.get(id);
@@ -143,7 +145,7 @@ public class NodeProperties {
 		interested.put(curTime, hosts);
 	}
 	
-	public void updateAvailable(double curTime, ArrayList<DTNHost> hosts){
+	public void updateAvailable(double curTime, Set<DTNHost> hosts){
 		availableH.put(curTime, hosts);
 	}
 	
@@ -155,7 +157,7 @@ public class NodeProperties {
 		return interested;
 	}
 	
-	public HashMap<Double, ArrayList<DTNHost>> getAvailableList(){
+	public HashMap<Double, Set<DTNHost>> getAvailableList(){
 		return availableH;
 	}
 	

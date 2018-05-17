@@ -3,6 +3,7 @@ package fragmentation;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 
 import streaming.StreamChunk;
 
@@ -20,12 +21,14 @@ public class SADFragmentation {
 	private int noOfChunksPerFrag;
 
 	private HashMap<Integer, Fragment> fragments;
+	ArrayList<StreamChunk> temp;
 	
 	public SADFragmentation(){
 		fragments = new HashMap<Integer, Fragment>();
+		temp = new ArrayList<StreamChunk>();
 	}
 	
-	public void createFragment(ArrayList<StreamChunk> chunks) { //mainly used by broadcaster
+	public void createFragment(List<StreamChunk> chunks) { //mainly used by broadcaster
 		fragments.put(id, new Fragment(id++, chunks));
 	}
 	
@@ -63,21 +66,21 @@ public class SADFragmentation {
 		return fragments.get(id).getTimeCreated();
 	}
 	
-	public ArrayList<Integer> getFragments(){
-		ArrayList<Integer> fIds = new ArrayList<Integer>();
-		for(int key: fragments.keySet()){
-			fIds.add(fragments.get(key).getId());
-		}
-		Collections.sort(fIds);
-		return fIds;
-	}
+//	public ArrayList<Integer> getFragments(){
+//		ArrayList<Integer> fIds = new ArrayList<Integer>();
+//		for(int key: fragments.keySet()){
+//			fIds.add(fragments.get(key).getId());
+//		}
+//		Collections.sort(fIds);
+//		return fIds;
+//	}
 	
 	public int getCurrIndex(){
 		return fragments.size();
 	}
 
 	public void initTransLevelFrag(int id){
-		ArrayList<StreamChunk> temp = new ArrayList<StreamChunk>(noOfChunksPerFrag);
+		temp.clear();
 		for (int i=0; i<noOfChunksPerFrag; i++){
 			temp.add(null);
 		}

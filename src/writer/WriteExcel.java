@@ -28,13 +28,7 @@ public class WriteExcel {
     private WritableCellFormat timesBoldUnderline;
     private WritableCellFormat times;
     private String inputFile;
-    
-    private String[] header = {"HostName", "AverageWaitTime", "TimeFirstRequested","TimeFirstChunkReceived", "TimeStartedPlaying", "TimeLastPlayed",
-    		"ACK", "LastChunkReceived", "#ofTimesInterrupted", "TotalChunksReceived", "#ofDuplicateChunksReceived", "#ofTimesRequested", "#ofDuplicateRequest", 
-                               "TotalIndexFragmentSent", "TotalTransFragmentSent", "TotalChunksSent", "#ofFragmentsCreated (IndexLevel)", "#ofTimesAdjusted",
-                               "SeedNo."};
-    TreeMap<DTNHost, NodeProperties> nodeRecord = new TreeMap<DTNHost, NodeProperties>();
-    
+  
     Workbook workbook;
     WritableWorkbook wb;
     WritableSheet excelSheet;
@@ -57,7 +51,7 @@ public class WriteExcel {
         else{
         	wb = Workbook.createWorkbook(file, wbSettings);
         	wb.createSheet("Report", 0);
-        	  excelSheet = wb.getSheet(0); 
+        	 excelSheet = wb.getSheet(0); 
         	initLabel();
         	createLabel(excelSheet);   	
         }
@@ -87,11 +81,10 @@ public class WriteExcel {
     }
     
     public void write(TreeMap<DTNHost, NodeProperties> nodeRecord, int seed){
-    	this.nodeRecord = nodeRecord;    	
     
     	int row = excelSheet.getRows();
 		try {
-	        createContent(excelSheet, row, seed);
+	        createContent(nodeRecord, excelSheet, row, seed);
 		} catch (WriteException e) {
 			e.printStackTrace();
 		}
@@ -105,14 +98,18 @@ public class WriteExcel {
     
     private void createLabel(WritableSheet sheet)
             throws WriteException {
-
+    	  
+       String[] header = {"HostName", "AverageWaitTime", "TimeFirstRequested","TimeFirstChunkReceived", "TimeStartedPlaying", "TimeLastPlayed",
+        		"ACK", "LastChunkReceived", "#ofTimesInterrupted", "TotalChunksReceived", "#ofDuplicateChunksReceived", "#ofTimesRequested", "#ofDuplicateRequest", 
+                                   "TotalIndexFragmentSent", "TotalTransFragmentSent", "TotalChunksSent", "#ofFragmentsCreated (IndexLevel)", "#ofTimesAdjusted",
+                                   "SeedNo."};
         // Write a few headers
         for(int i=0; i<header.length; i++){
         	addCaption(sheet, i, 0, header[i]);
         }
     }
 
-    private void createContent(WritableSheet sheet, int row, int seed) throws WriteException,
+    private void createContent(TreeMap<DTNHost, NodeProperties> nodeRecord, WritableSheet sheet, int row, int seed) throws WriteException,
             RowsExceededException {
     	
         // Write a few number

@@ -2,16 +2,13 @@ package applications;
 
 import java.util.ArrayList;
 
+
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Random;
-import java.util.concurrent.ConcurrentHashMap;
 
 import core.Application;
-import core.Connection;
 import core.DTNHost;
 import core.Message;
 import core.Settings;
@@ -38,8 +35,12 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	private double lastChokeInterval = 0;
 	private double lastOptimalInterval =0;
 	private int noOfChunksPerFrag=0; //default=0, no fragmentation
-	private int byterate; //bitrate in bytes
+	private double byterate; //bitrate in bytes
 	private int durationPerChunk;
+	private Random r;
+	private ArrayList<Long> tempLong;
+	private ArrayList<DTNHost> tempHost; 
+//	private ArrayList<StreamChunk> tempChunk;
 	
 	public BroadcasterAppV3(Settings s) {
 		super(s);
@@ -49,10 +50,15 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		durationPerChunk = s.getInt(DURATION_PER_CHUNK);
 		
 		sadf = new SADFragmentation();
+		tempLong = new ArrayList<Long>();
 		sadf.setNoOfChunksPerFrag(noOfChunksPerFrag);
+		
 //		r=new Random();
 		sTime = 0;	//s.getDouble("streamTime") * r.nextDouble(); //time to start broadcasting
+		tempHost = new ArrayList<DTNHost>();
 		initUnchoke();
+		
+		r = new Random();
 	}
 
 	public BroadcasterAppV3(BroadcasterAppV3 a) {
@@ -64,9 +70,12 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		this.durationPerChunk = a.getDurationPerChunk();
 		
 		sadf = new SADFragmentation();
+		tempLong= new ArrayList<Long>();
 		sadf.setNoOfChunksPerFrag(noOfChunksPerFrag);
 		sTime = a.getSTime();
+		tempHost = new ArrayList<DTNHost>();
 		initUnchoke();
+		r = new Random();
 	}
 
 	@Override
@@ -157,7 +166,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 					if((stream.getLatestChunk().getChunkID()+1) % sadf.getNoOfChunksPerFrag() == 0){
 			
 						int sIndex = sadf.getCurrIndex() * sadf.getNoOfChunksPerFrag();
-						sadf.createFragment(new ArrayList(stream.getChunks().subList(sIndex,sIndex+sadf.getNoOfChunksPerFrag())));
+						sadf.createFragment(((ArrayList<StreamChunk>) stream.getChunks()).subList(sIndex,sIndex+sadf.getNoOfChunksPerFrag()));
 						try{
 							sadf.getFragment(sadf.getCurrIndex()-1).setIndexComplete();
 							System.out.println(host + " created fragment " + (sadf.getCurrIndex()-1));
@@ -173,11 +182,12 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		
 		//for maintaining -- choking and unchoking
 		if (curTime-lastChokeInterval >= rechokeInterval){
-			ArrayList<DTNHost> recognized =  new ArrayList<DTNHost>(interestedNeighbors.keySet());
 			
 			if (hasNewInterested()){
+				ArrayList<DTNHost> recognized =  new ArrayList<DTNHost>(interestedNeighbors.keySet());
 				
-				ArrayList<DTNHost> prevUnchokedList = (ArrayList<DTNHost>) unchoked.clone();
+				tempHost.clear();
+				tempHost.addAll((ArrayList<DTNHost>) unchoked.clone());
 				
 				if (curTime-lastOptimalInterval >= optimisticUnchokeInterval){ //optimistic interval = every 15 seconds
 					recognized.removeAll(unchoked); //remove first an nagrequest bisan unchoked na kanina [pa]. to avoid duplicates
@@ -189,41 +199,43 @@ public class BroadcasterAppV3 extends StreamingApplication{
 						}
 					}
 					recognized = sortNeighborsByBandwidth(recognized);
-					System.out.println(host + " interested nodes: " +recognized);
+//					System.out.println(host + " interested nodes: " +recognized);
 					
 					unchokeTop3(host, recognized);
-					prevUnchokedList.removeAll(unchoked.subList(0, 3)); //remove an api kanina na diri na api yana ha top3
+					tempHost.removeAll(unchoked.subList(0, 3)); //remove an api kanina na diri na api yana ha top3
 					
 			 		/*
 			 		 * api ha pag random yana an naapi ha unchoke kanina tapos diri na api yana ha newly unchoked
 			 		 */
-					unchokeRand(host, recognized, prevUnchokedList);
-					prevUnchokedList.removeAll(unchoked); //remove utro an tanan na previous na api na ha newly unchoked
+					unchokeRand(host, recognized, tempHost);
+					tempHost.removeAll(unchoked); //remove utro an tanan na previous na api na ha newly unchoked
 					
 					/*
 					 * nahibilin ha recognized an mga waray ka unchoke. 
 					 * send CHOKE to mga api ha previous unchoked kanina na diri na api yana
 					 */
-					chokeOthers(host, prevUnchokedList); //-- don't  choke if it's not on curr unchokedList
+					chokeOthers(host, tempHost); //-- don't  choke if it's not on curr unchokedList
 					lastOptimalInterval = curTime;
 				}
 				
 				//choke interval == 5 seconds for random
 				else{
 					recognized.add(unchoked.get(3));
-					unchokeRand(host, recognized, prevUnchokedList); //an mga bag-o an pilii random
+					unchokeRand(host, recognized, tempHost); //an mga bag-o an pilii random
 				}
+				
+				sendEventToListeners(StreamAppReporter.UNCHOKED, unchoked.clone(), host);
+//				System.out.println(host + " unchoked: " + unchoked);
+				sendEventToListeners(StreamAppReporter.INTERESTED, recognized.clone(), host);
 			}
 			
 			lastChokeInterval = curTime;
-			sendEventToListeners(StreamAppReporter.UNCHOKED, unchoked.clone(), host);
-			System.out.println(host + " unchoked: " + unchoked);
-			sendEventToListeners(StreamAppReporter.INTERESTED, recognized.clone(), host);
+
 		}
 	}
 	
 	public void startBroadcast(DTNHost host){
-		stream= new Stream("streamID", durationPerChunk, byterate);
+		stream= new Stream("streamID", durationPerChunk, byterate, SimClock.getTime());
 		stream.startLiveStream();
 		
 		lastChokeInterval = SimClock.getTime();
@@ -243,7 +255,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		m.addProperty(DURATION_PER_CHUNK, durationPerChunk);
 		m.addProperty(CHUNKS_PER_FRAG, noOfChunksPerFrag);
 		m.addProperty(TVProphetRouterV2.MESSAGE_WEIGHT, 1);
-		m.addProperty("time_started", SimClock.getIntTime());
+		m.addProperty("time_started", stream.getTimeStarted());
 		m.addProperty("source", host);
 		m.setAppID(APP_ID);
 		host.createNewMessage(m); //must override, meaning start a broadcast that a stream is initiated from this peer
@@ -280,20 +292,20 @@ public class BroadcasterAppV3 extends StreamingApplication{
 			currAck = stream.getLatestChunk().getChunkID();
 		}
 		
-		ArrayList<Long> latest = new ArrayList<Long>();
-		latest.add(currAck);
+		tempLong.clear();
+		tempLong.add(currAck);
 		
 		for (DTNHost h: unchoked){
 			if (h!=null){
-				sendBuffermap(host, h, latest);
-				helloSent.get(h).addAll(latest);
+				sendBuffermap(host, h, tempLong);
+				helloSent.get(h).addAll((ArrayList<Long>) tempLong.clone());
 			}
 		}
 		
 		for (DTNHost h: helloSent.keySet()){
 			if (!unchoked.contains(h)){
-				sendBuffermap(host, h, latest);
-				helloSent.get(h).addAll(latest);
+				sendBuffermap(host, h, tempLong);
+				helloSent.get(h).addAll((ArrayList<Long>) tempLong.clone());
 			}
 		}
 	}	
@@ -308,7 +320,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	
 	private void evaluateToSend(DTNHost host, Message msg) {
 		ArrayList<Long> request = (ArrayList<Long>) msg.getProperty("chunk");
-		ArrayList<Long> bundled = new ArrayList<Long>();
+		tempLong.clear();
 		
 		long rChunk;
 		int currFrag;
@@ -316,7 +328,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		while(!request.isEmpty()){
 			rChunk = request.get(0);
 			currFrag = stream.getChunk(rChunk).getFragmentIndex();
-			bundled.clear();
+			tempLong.clear();
 			
 			if (sadf.doesExist(currFrag) && sadf.getFragment(currFrag).isComplete()){ //if diri pa complete an index level, cannot send transmission level
 				long fIndex = sadf.getFragment(currFrag).getFirstChunkID();
@@ -340,16 +352,16 @@ public class BroadcasterAppV3 extends StreamingApplication{
 					Iterator<Long> iter = request.iterator();
 					
 					double transSize = 	getTransSize(host, msg.getFrom());
-					double byteRate = StreamChunk.getByterate();
+					double byteRate = stream.getByterate();
 					double currSize;
 					
 					while(iter.hasNext()){
 						long currChunk = iter.next();
-						currSize = (bundled.size()*byteRate) + HEADER_SIZE;
+						currSize = (tempLong.size()*byteRate) + HEADER_SIZE;
 					
-						if(currFrag == stream.getChunk(currChunk).getFragmentIndex() && (bundled.isEmpty() || currChunk==prevChunk+1)
+						if(currFrag == stream.getChunk(currChunk).getFragmentIndex() && (tempLong.isEmpty() || currChunk==prevChunk+1)
 								&& currSize < transSize){
-							bundled.add(currChunk);
+							tempLong.add(currChunk);
 							prevChunk = currChunk;
 							iter.remove();
 						}
@@ -360,18 +372,17 @@ public class BroadcasterAppV3 extends StreamingApplication{
 						}
 					}
 					
-					if (!bundled.isEmpty() && bundled.size()>1){ //nasend fragment bisan usa la it sulod
-						int start = sadf.getFragment(currFrag).indexOf(bundled.get(0));
-						int end = sadf.getFragment(currFrag).indexOf(bundled.get(bundled.size()-1));
+					if (!tempLong.isEmpty() && tempLong.size()>1){ //nasend fragment bisan usa la it sulod
+						int start = sadf.getFragment(currFrag).indexOf(tempLong.get(0));
+						int end = sadf.getFragment(currFrag).indexOf(tempLong.get(tempLong.size()-1));
 						
-						ArrayList<StreamChunk> bundle = new ArrayList<StreamChunk> (sadf.getFragment(currFrag).getBundled().subList(start, end+1));					
-						Fragment fragment = new Fragment(currFrag, bundle);
+						Fragment fragment = new Fragment(currFrag, sadf.getFragment(currFrag).getBundled().subList(start, end+1));
 						fragment.setStartPosition(start);
 						fragment.setEndPosition(end);
 						sendTransFragment(host, msg.getFrom(), fragment);
 					}
-					else if (bundled.size()==1){ //limit trans level == 2 chunks fragmented
-						sendChunk(stream.getChunk(bundled.get(0)), host, msg.getFrom());
+					else if (tempLong.size()==1){ //limit trans level == 2 chunks fragmented
+						sendChunk(stream.getChunk(tempLong.get(0)), host, msg.getFrom());
 					}
 					else{
 						sendChunk(stream.getChunk(rChunk), host, msg.getFrom());
@@ -391,7 +402,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	 */
 	private void subFragment(DTNHost host, DTNHost to, ArrayList<StreamChunk> bundle, int currFrag){
 		sendEventToListeners(StreamAppReporter.SIZE_ADJUSTED, null, host);
-		ArrayList<Long> toSend = new ArrayList<Long>();
+		tempLong.clear();
 		
 		double transSize = 	getTransSize(host, to);
 		double byteRate = StreamChunk.getByterate();
@@ -400,16 +411,16 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		
 		while(!bundle.isEmpty()){
 			Iterator<StreamChunk> iter = bundle.iterator();
-			toSend.clear();
+			tempLong.clear();
 			prevChunk = bundle.get(0).getChunkID();
 			
 			while(iter.hasNext()){
 				long currChunk = iter.next().getChunkID();
-				currSize = ((toSend.size()+1)*byteRate) + HEADER_SIZE;
+				currSize = ((tempLong.size()+1)*byteRate) + HEADER_SIZE;
 
-				if(currFrag == stream.getChunk(currChunk).getFragmentIndex() && (toSend.isEmpty() || currChunk==prevChunk+1)
+				if(currFrag == stream.getChunk(currChunk).getFragmentIndex() && (tempLong.isEmpty() || currChunk==prevChunk+1)
 						&& currSize < transSize){
-					toSend.add(currChunk);
+					tempLong.add(currChunk);
 					prevChunk = currChunk;
 					iter.remove();
 				}
@@ -420,19 +431,19 @@ public class BroadcasterAppV3 extends StreamingApplication{
 				}
 			}
 			
-			if (!toSend.isEmpty() && toSend.size()>1){ //nasend fragment bisan usa la it sulod
+			if (!tempHost.isEmpty() && tempHost.size()>1){ //nasend fragment bisan usa la it sulod
 				//if tapos na, send this part of request_response 
-				int start = sadf.getFragment(currFrag).indexOf(toSend.get(0));
-				int end = sadf.getFragment(currFrag).indexOf(toSend.get(toSend.size()-1));
+				int start = sadf.getFragment(currFrag).indexOf(tempLong.get(0));
+				int end = sadf.getFragment(currFrag).indexOf(tempLong.get(tempLong.size()-1));
 				
-				ArrayList<StreamChunk> subFrag= new ArrayList<StreamChunk> (sadf.getFragment(currFrag).getBundled().subList(start, end+1));					
-				Fragment fragment = new Fragment(currFrag, subFrag);
+//				ArrayList<StreamChunk> subFrag= new ArrayList<StreamChunk> ();
+				Fragment fragment = new Fragment(currFrag, sadf.getFragment(currFrag).getBundled().subList(start, end+1));
 				fragment.setStartPosition(start);
 				fragment.setEndPosition(end);
 				sendTransFragment(host, to, fragment);
 			}
-			else if (toSend.size()==1){ //limit trans level == 2 chunks fragmented
-				sendChunk(stream.getChunk(toSend.get(0)), host, to);
+			else if (tempLong.size()==1){ //limit trans level == 2 chunks fragmented
+				sendChunk(stream.getChunk(tempLong.get(0)), host, to);
 			}
 		}
 	}
@@ -535,15 +546,15 @@ public class BroadcasterAppV3 extends StreamingApplication{
 			msgType = CHOKE;
 		}
 
-		ArrayList<Long> unsentUpdate = (ArrayList<Long>) stream.getBuffermap().clone();
-	
-		unsentUpdate.removeAll(helloSent.get(to));
+		tempLong.clear();
+		tempLong.addAll(stream.getBuffermap());
+		tempLong.removeAll(helloSent.get(to));
 		
 		Message m = new Message(host, to, id, SIMPLE_MSG_SIZE);		
 		m.addProperty("type", APP_TYPE);
 		m.setAppID(APP_ID);
 		m.addProperty("msg_type", msgType);
-		m.addProperty("buffermap", unsentUpdate);
+		m.addProperty("buffermap", tempLong.clone());
 		m.addProperty(TVProphetRouterV2.MESSAGE_WEIGHT, 4);
 		host.createNewMessage(m);
 	}
@@ -555,10 +566,11 @@ public class BroadcasterAppV3 extends StreamingApplication{
 
 		if (interestedNeighbors.isEmpty()) return false;
 			
-		ArrayList<DTNHost> nh = new ArrayList<DTNHost> (interestedNeighbors.keySet());
-		nh.removeAll(unchoked);
+		tempHost.clear();
+		tempHost.addAll(interestedNeighbors.keySet());
+		tempHost.removeAll(unchoked);
 		
-		return !nh.isEmpty();
+		return !tempHost.isEmpty();
 	}
 	
 	/*
@@ -592,7 +604,6 @@ public class BroadcasterAppV3 extends StreamingApplication{
 	private void unchokeRand(DTNHost host, ArrayList<DTNHost> recognized, ArrayList<DTNHost> prevUnchoked){
 		if (recognized.isEmpty()) return;
 
-		Random r = new Random();
 		DTNHost prevRand;
 		recognized.removeAll(unchoked.subList(0, 3)); //remove pagpili random an ada na ha unchoked list
 		prevRand = unchoked.get(3);
@@ -639,7 +650,7 @@ public class BroadcasterAppV3 extends StreamingApplication{
 		return durationPerChunk;
 	}
 
-	private int getByterate() {
+	private double getByterate() {
 		return byterate;
 	}
 

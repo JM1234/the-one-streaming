@@ -44,11 +44,14 @@ public class TotalEncountersReport extends Report implements ConnectionListener,
 	public void done() {
 
 		int maxEncounters = -1;
-		for (int i=0; i<encounters.length; i++) {
-			if (encounters[i] > maxEncounters) {
-				maxEncounters = encounters[i];
+		try{
+			for (int i=0; i<encounters.length; i++) {
+				if (encounters[i] > maxEncounters) {
+					maxEncounters = encounters[i];
+				}
 			}
 		}
+		catch(NullPointerException e){}
 
 		int[] distribution = new int[maxEncounters + 1];
 

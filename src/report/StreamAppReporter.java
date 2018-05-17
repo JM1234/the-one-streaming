@@ -11,6 +11,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.TreeMap;
 
 import applications.StreamingApplication;
@@ -116,7 +117,7 @@ public class StreamAppReporter extends Report implements ApplicationListener{
 			nodeProps.updateInterested(SimClock.getTime(), interestedH);
 		}
 		else if (event.equals(UPDATE_AVAILABLE_NEIGHBORS)){
-			ArrayList<DTNHost> availableH = (ArrayList<DTNHost>) params;
+			Set<DTNHost> availableH = (Set<DTNHost>) params;
 			nodeProps.updateAvailable(SimClock.getTime(), availableH);
 		}
 		else if (event.equals(UPDATE_ACK)){
@@ -145,8 +146,7 @@ public class StreamAppReporter extends Report implements ApplicationListener{
 		nodeRecord.put(host, nodeProps);
 	}
 
-//	public void done(){
-//
+	public void recordPerNode(){
 ////		String eol = System.getProperty("line.separator");
 //		String chunkRecord="";
 ////		String nodesUnchoked;
@@ -208,7 +208,7 @@ public class StreamAppReporter extends Report implements ApplicationListener{
 //				write(chunkRecord);
 //		}
 //		super.done();
-//	}
+	}
 	
 	public int getSeed(){
 		Settings s = new Settings(MovementModel.MOVEMENT_MODEL_NS);
@@ -223,10 +223,11 @@ public class StreamAppReporter extends Report implements ApplicationListener{
 	public void done(){
 		WriteExcel test = new WriteExcel();
 	
-		excelDir = excelDir + getReportDir() + getScenarioName() + ".xls";
+//		excelDir
+		excelDir += getReportDir() + getScenarioName() + ".xls";
 		
 		System.out.println(" excelDir: " + excelDir);
-		test.setOutputFile(excelDir); //+ getScenarioName() + ".xls");
+		test.setOutputFile(excelDir);
 	
 		try {
 			test.init();

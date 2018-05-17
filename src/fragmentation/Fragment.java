@@ -18,7 +18,7 @@ public class Fragment {
 	private int size; //in bytes
 	private boolean isComplete = false;
 	
-	public Fragment(int id, ArrayList<StreamChunk> bChunks){
+	public Fragment(int id, List<StreamChunk> bChunks){
 		this.id = id;
 		this.bChunks = new ArrayList<StreamChunk> (bChunks);
 		timeCreated = SimClock.getTime();
@@ -71,10 +71,6 @@ public class Fragment {
 	public double getSize(){
 		return (StreamChunk.getByterate()* getNoOfChunks());
 	}
-	
-//	public double getSize(int quantity){
-//		return (StreamChunk.m480p * quantity);
-//	}
 	
 	public int getNoOfChunks(){
 		return bChunks.size();

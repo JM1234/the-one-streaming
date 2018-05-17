@@ -68,6 +68,9 @@ public abstract class StreamingApplication extends Application{
 	protected int rechokeInterval;
 	protected int optimisticUnchokeInterval;
 	
+	private ArrayList<DTNHost> currConnected;
+	private ArrayList<DTNHost> tempHoldHost;
+	
 	public StreamingApplication(Settings s){
 
 		if(s.contains(STREAM_ID)){
@@ -81,6 +84,8 @@ public abstract class StreamingApplication extends Application{
 		chunkCount = new TreeMap<Long, Integer>();
 		interestedNeighbors = new HashMap<DTNHost, Integer>();
 		unchoked = new ArrayList<DTNHost>(4);
+		currConnected= new ArrayList<DTNHost>();
+		tempHoldHost = new ArrayList<DTNHost>();
 		
 		super.setAppID(APP_ID);
 	}
@@ -96,6 +101,8 @@ public abstract class StreamingApplication extends Application{
 		interestedNeighbors = new HashMap<DTNHost, Integer>();
 		chunkCount = new TreeMap<Long, Integer>();
 		unchoked = new ArrayList<DTNHost>(4);
+		currConnected= new ArrayList<DTNHost>();
+		tempHoldHost = new ArrayList<DTNHost>();
 	}
 
 	private int getOptimisticUnchokeInterval() {
@@ -137,15 +144,17 @@ public abstract class StreamingApplication extends Application{
 	 * Automatically removes buffer for disconnected nodes.
 	 */
 	protected void checkHelloedConnection(DTNHost host){ 
-		ArrayList<DTNHost> currConnected = new ArrayList<DTNHost>();
+		currConnected.clear();
+		tempHoldHost.clear();
+		
 		for (Connection c : host.getConnections()){
 			currConnected.add(c.getOtherNode(host));
 		}
 
-		ArrayList<DTNHost> disconnectedN = new ArrayList<DTNHost>(helloSent.keySet());
-		disconnectedN.removeAll(currConnected);
+		tempHoldHost.addAll(helloSent.keySet());
+		tempHoldHost.removeAll(currConnected);
 
-	    for(DTNHost dtnHost : disconnectedN){
+	    for(DTNHost dtnHost : tempHoldHost){
 			removeBufferedMessages(host, dtnHost);
 			interestedNeighbors.remove(dtnHost); //if it sent an interested message, remove it from the list of interested
 			updateUnchoked(unchoked.indexOf(dtnHost), null); //if it is included among the current list of unchoked  -----------------------feeling ko may something wrong ini
@@ -200,15 +209,15 @@ public abstract class StreamingApplication extends Application{
 	}
 
 	public ArrayList<DTNHost> sortNeighborsByBandwidth(ArrayList<DTNHost> hosts){
-		ArrayList<DTNHost> h = new ArrayList<>(hosts);
-		Collections.sort(h, StreamingApplication.BandwidthComparator);
-		return h;
+		Collections.sort(hosts, StreamingApplication.BandwidthComparator);
+		return hosts;
 	}
 	
 	public ArrayList<DTNHost> sortNeighborsByBandwidth(List<DTNHost> hosts){
-		ArrayList<DTNHost> h = new ArrayList<>(hosts);
-		Collections.sort(h, StreamingApplication.BandwidthComparator);
-		return h;
+		tempHoldHost.clear();
+		tempHoldHost.addAll(hosts);
+		Collections.sort(tempHoldHost, StreamingApplication.BandwidthComparator);
+		return tempHoldHost;
 	}
 
     public static Comparator<DTNHost> BandwidthComparator = new Comparator<DTNHost>() {

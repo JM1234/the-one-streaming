@@ -1,12 +1,11 @@
 package streaming;
 
 import java.util.ArrayList;
+
+import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.TreeMap;
 
-import applications.WatcherAppV3;
 import fragmentation.Fragment;
 
 public class StreamProperties {
@@ -21,19 +20,20 @@ public class StreamProperties {
 	private TreeMap<Long, StreamChunk> receivedChunks;
 	
 	private long ack=-1; //last consecutive sent
-	private int byterate;
-	private int durationPerChunk;
+	private static double byterate;
+	private static int durationPerChunk;
+	private ArrayList<Long> temp;
 	
 	public StreamProperties(String streamID){
 		this.streamID = streamID;
 		
 		receivedChunks = new TreeMap<Long, StreamChunk>();
-		receivedFragments = new ArrayList<Fragment>();
+		temp = new ArrayList<Long>();
 	}
-	
-	public void initProps(int durationPerChunk, int byterate){
-		this.byterate = byterate;
-		this.durationPerChunk = durationPerChunk;
+
+	public void initProps(int durationPerChunk, double byterate){
+		StreamProperties.byterate = byterate;
+		StreamProperties.durationPerChunk = durationPerChunk;
 	}
 	
 	public void addChunk(StreamChunk chunk){
@@ -75,8 +75,7 @@ public class StreamProperties {
 	
 	//simply sending all the chunks it already has, whether bundled or not
 	public ArrayList<Long> getBuffermap(){
-		ArrayList<Long> temp = new ArrayList<Long>();
-		
+		temp.clear();
 		for (StreamChunk c: receivedChunks.values()){
 			temp.add(c.getChunkID());
 		}
@@ -111,9 +110,9 @@ public class StreamProperties {
 		return chunkStart;
 	}
 	
-	public ArrayList<StreamChunk> getReceived(){
-		ArrayList<StreamChunk> coll = new ArrayList<StreamChunk> (receivedChunks.values());
-		return coll;
+	public Collection<StreamChunk> getReceived(){
+		return receivedChunks.values();
+//		return coll;
 	}
 	
 	public void skipNext(){
@@ -165,11 +164,11 @@ public class StreamProperties {
 		return (ctr==(prebuffer/2)? true:false);
 	}
 
-	public double getStreamInterval() {
+	public int getStreamInterval() {
 		return durationPerChunk;
 	}
 
-	public int getByterate() {
+	public double getByterate() {
 		return byterate;
 	}
 }

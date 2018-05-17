@@ -1,7 +1,5 @@
 package streaming;
 
-import core.DTNHost;
-import core.Message;
 import core.SimClock;
 
 public class StreamChunk{
@@ -18,7 +16,6 @@ public class StreamChunk{
 	
 	//specific video properties
 	private static double byterate; //in bytes per second
-	private int framerate;
 	
 	private String fileID;
 	private long chunkID;
@@ -36,7 +33,7 @@ public class StreamChunk{
 	public StreamChunk(String fileID, long chunkID, byte byterate){
 		this.fileID = fileID;
 		this.chunkID = chunkID;
-		this.byterate = byterate;
+		StreamChunk.byterate = byterate;
 		timeCreated = SimClock.getTime();
 	}
 	
@@ -67,15 +64,11 @@ public class StreamChunk{
 	public int getFragmentIndex(){
 		return fId;
 	}
-	
-	public void setByterate(int byterate){
-		this.byterate=byterate;
-	}
-	
+
 	public static double getByterate(){
 		return byterate;
 	}
-	
+
 	public static int getDuration(){
 		return duration;
 	}
